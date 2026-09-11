@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis de empresas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{
+    --bg:#fafaf8; --card:#ffffff; --border:#e5e3dc; --border-strong:#d1cfc5;
+    --text:#161615; --text-2:#5f5e5a; --text-muted:#8b8983;
+    --accent:#0c447c; --accent-bg:#e6f1fb;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .shell{max-width:1100px;margin:0 auto;padding:32px 24px 64px;}
+  header{margin-bottom:28px;}
+  header h1{font-size:22px;font-weight:600;margin:0 0 4px;}
+  header p{font-size:14px;color:var(--text-2);margin:0;}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:28px;}
+  .tab{
+    padding:10px 18px;font-size:14px;font-weight:500;color:var(--text-muted);
+    background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;
+    margin-bottom:-1px;
+  }
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .company-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;flex-wrap:wrap;}
+  .company-head h2{font-size:20px;font-weight:600;margin:0 0 4px;}
+  .company-head .ticker{font-size:13px;color:var(--text-muted);}
+  .docs{display:flex;gap:8px;}
+  .doc-btn{
+    display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;
+    padding:8px 14px;border:1px solid var(--border-strong);border-radius:8px;
+    text-decoration:none;color:var(--text);background:var(--card);
+  }
+  .doc-btn:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px;}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .kpi-card .label{font-size:12px;color:var(--text-muted);margin-bottom:6px;}
+  .kpi-card .value{font-size:22px;font-weight:600;}
+  .kpi-card .delta{font-size:12px;margin-top:4px;}
+  .delta.up{color:#0f6e56;}
+  .delta.down{color:#993c1d;}
+
+  .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:720px){.chart-row{grid-template-columns:1fr;}}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .chart-card h3{font-size:13px;font-weight:600;margin:0 0 12px;color:var(--text-2);}
+  .chart-wrap{position:relative;height:220px;}
+
+  .empty{color:var(--text-muted);font-size:13px;padding:40px 0;text-align:center;}
+
+  .section-title{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.03em;margin:32px 0 12px;}
+  .section-title:first-of-type{margin-top:0;}
+
+  .subtabs{display:flex;gap:6px;margin-bottom:20px;}
+  .subtab{
+    padding:6px 14px;font-size:13px;font-weight:500;color:var(--text-muted);
+    background:var(--card);border:1px solid var(--border-strong);border-radius:8px;cursor:pointer;
+  }
+  .subtab:hover{color:var(--text);}
+  .subtab.active{color:var(--accent);border-color:var(--accent);background:var(--accent-bg);}
+  .subpanel{display:none;}
+  .subpanel.active{display:block;}
+
+  .qual-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .qual-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .qual-table th,.qual-table td{padding:10px 14px;text-align:left;}
+  .qual-table th{color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border);}
+  .qual-table td:first-child{color:var(--text-2);font-weight:500;}
+  .qual-table tr:not(:last-child) td{border-bottom:1px solid var(--border);}
+
+  .region-map-wrap{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;
+  }
+  @media (max-width:600px){.region-map-wrap{grid-template-columns:repeat(2,1fr);}}
+  .region-block{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:14px 12px;cursor:pointer;text-align:center;position:relative;
+  }
+  .region-block:hover{border-color:var(--accent);background:var(--accent-bg);}
+  .region-block.selected{border-color:var(--accent);border-width:2px;background:var(--accent-bg);}
+  .region-block .rname{font-size:13px;font-weight:500;margin-bottom:4px;}
+  .region-block .rvalue{font-size:16px;font-weight:600;}
+  .region-block .rshare{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .region-block .rtooltip{
+    display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+    margin-bottom:6px;background:var(--text);color:var(--bg);font-size:11px;
+    padding:6px 9px;border-radius:6px;white-space:nowrap;z-index:5;
+  }
+  .region-block:hover .rtooltip{display:block;}
+
+  .region-detail,.segment-detail{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:16px;margin-bottom:24px;
+  }
+  .region-detail .placeholder,.segment-detail .placeholder{color:var(--text-muted);font-size:13px;}
+  .region-detail h4,.segment-detail h4{font-size:14px;font-weight:600;margin:0 0 12px;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1>Análisis de empresas</h1>
+    <p>Tesis de inversión, modelos financieros y seguimiento de KPIs</p>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-panel="booking">Booking</button>
+    <button class="tab" data-panel="meta">Meta</button>
+    <button class="tab" data-panel="hermes">Hermès</button>
+    <button class="tab" data-panel="lvmh">LVMH</button>
+  </div>
+
+  <!-- BOOKING -->
+  <section class="panel active" id="panel-booking">
+    <div class="company-head">
+      <div>
+        <h2>Booking Holdings</h2>
+        <span class="ticker">NASDAQ: BKNG</span>
+      </div>
+      <div class="docs">
+        <a class="doc-btn" href="#" id="booking-thesis-link" target="_blank" rel="noopener">
+          <i class="ti ti-file-text"></i> Tesis de inversión (PDF)
+        </a>
+        <a class="doc-btn" href="#" id="booking-model-link" target="_blank" rel="noopener">
+          <i class="ti ti-table"></i> Modelo (Excel)
+        </a>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="label">Ingresos FY2025</div>
+        <div class="value">$26.917 M</div>
+        <div class="delta up">+13.4% YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen EBIT FY2025</div>
+        <div class="value">32.8%</div>
+        <div class="delta up">+9.5 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen FCF FY2025</div>
+        <div class="value">31.5%</div>
+        <div class="delta up">+0.7 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">EPS FY2025</div>
+        <div class="value">$6.62</div>
+        <div class="delta down">-4.2% YoY</div>
+      </div>
+    </div>
+
+    <div class="subtabs" id="booking-subtabs">
+      <button class="subtab active" data-subpanel="booking-fin">Financieros</button>
+      <button class="subtab" data-subpanel="booking-ops">Operativos</button>
+    </div>
+
+    <div class="subpanel active" id="subpanel-booking-fin">
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Ingresos totales ($M)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-revenue" role="img" aria-label="Evolución de ingresos totales de Booking, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>EBIT y FCF ($M)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-ebit-fcf" role="img" aria-label="Evolución de EBIT y flujo de caja libre de Booking, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Margen EBIT y margen FCF (%)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-margins" role="img" aria-label="Evolución del margen EBIT y margen de flujo de caja libre de Booking, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Net income ($M)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-netincome" role="img" aria-label="Evolución del beneficio neto de Booking en millones de dólares, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>EPS ($)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-eps" role="img" aria-label="Evolución del beneficio por acción de Booking en dólares, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Acciones en circulación (miles, ponderado ajustado)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-shares" role="img" aria-label="Evolución de las acciones en circulación ponderadas y ajustadas de Booking, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+    </div>
+
+    <div class="subpanel" id="subpanel-booking-ops">
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Gross bookings ($M)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-grossbookings" role="img" aria-label="Evolución de gross bookings de Booking, 2021 a 2025, en millones de dólares">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Room nights booked (M) y average daily rate ($)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-roomnights-adr" role="img" aria-label="Evolución de las room nights booked en millones y la tarifa media diaria de Booking, 2020 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Take rate (%)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-takerate" role="img" aria-label="Evolución del take rate de Booking, 2021 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Marketing expenses (% de ingresos)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-marketing" role="img" aria-label="Evolución del gasto de marketing en millones de dólares y como porcentaje de ingresos de Booking, 2020 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Ingresos por línea de negocio ($M)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-revlines" role="img" aria-label="Evolución de merchant revenues, agency revenues y advertising de Booking, 2020 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Rental car days y airline tickets (M)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-carsflights" role="img" aria-label="Evolución de rental car days y airline tickets de Booking, 2021 a 2025, en millones">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>AA mix (%)</h3>
+        <div class="chart-wrap"><canvas id="chart-booking-aamix" role="img" aria-label="Evolución del AA mix de Booking, 2021 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+      </div>
+    </div>
+
+    <h3 class="section-title">Métricas cualitativas (guía de la compañía)</h3>
+    <div class="qual-table-wrap">
+      <table class="qual-table">
+        <thead>
+          <tr><th>Métrica</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Direct bookings mix</td><td>—</td><td>Low 60%</td><td>Mid 60%</td><td>Mid 60%</td></tr>
+          <tr><td>App bookings mix</td><td>45%</td><td>49%</td><td>Low 50%</td><td>Mid 50%</td></tr>
+          <tr><td>% de Genius Rooms</td><td>—</td><td>—</td><td>Mid 50%</td><td>High 50%</td></tr>
+          <tr><td>US mix</td><td>—</td><td>Low double digit</td><td>Low double digit</td><td>Low double digit</td></tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+  </section>
+
+  <!-- META -->
+  <section class="panel" id="panel-meta">
+    <div class="company-head">
+      <div>
+        <h2>Meta Platforms</h2>
+        <span class="ticker">NASDAQ: META</span>
+      </div>
+      <div class="docs">
+        <a class="doc-btn" href="#" id="meta-thesis-link" target="_blank" rel="noopener">
+          <i class="ti ti-file-text"></i> Tesis de inversión (PDF)
+        </a>
+        <a class="doc-btn" href="#" id="meta-model-link" target="_blank" rel="noopener">
+          <i class="ti ti-table"></i> Modelo (Excel)
+        </a>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="label">Ingresos FY2025</div>
+        <div class="value">$200.966 M</div>
+        <div class="delta up">+22.2% YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen EBIT FY2025</div>
+        <div class="value">41.4%</div>
+        <div class="delta down">-0.7 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen FCF FY2025</div>
+        <div class="value">22.9%</div>
+        <div class="delta down">-9.9 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">EPS FY2025</div>
+        <div class="value">$23.49</div>
+        <div class="delta down">-1.5% YoY</div>
+      </div>
+    </div>
+
+    <div class="subtabs" id="meta-subtabs">
+      <button class="subtab active" data-subpanel="meta-fin">Financieros</button>
+      <button class="subtab" data-subpanel="meta-ops">Operativos</button>
+    </div>
+
+    <div class="subpanel active" id="subpanel-meta-fin">
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Ingresos ($M)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-revenue" role="img" aria-label="Evolución de ingresos de Meta en millones de dólares, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>EBIT ($M) y margen EBIT (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-ebit" role="img" aria-label="Evolución de EBIT en millones de dólares y margen EBIT de Meta, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>EPS ($)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-eps" role="img" aria-label="Evolución del beneficio por acción de Meta en dólares, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Free cash flow ($M) y margen FCF (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-fcf" role="img" aria-label="Evolución del flujo de caja libre en millones de dólares y margen FCF de Meta, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>ROIC con fondo de comercio (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-roic" role="img" aria-label="Evolución del ROIC con fondo de comercio de Meta, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Growth CapEx ($M)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-capex" role="img" aria-label="Evolución del capex de crecimiento de Meta en millones de dólares, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpanel" id="subpanel-meta-ops">
+      <h3 class="section-title">Family of Apps (FY2021–FY2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Revenue ($M)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-foa-revenue" role="img" aria-label="Evolución de los ingresos de Family of Apps de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Income from operations ($M)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-foa-ebit" role="img" aria-label="Evolución del resultado operativo de Family of Apps de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Operating margin (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-foa-margin" role="img" aria-label="Evolución del margen operativo de Family of Apps de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Reality Labs (FY2021–FY2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Revenue ($M)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-rl-revenue" role="img" aria-label="Evolución de los ingresos de Reality Labs de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Loss from operations ($M)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-rl-loss" role="img" aria-label="Evolución de la pérdida operativa de Reality Labs de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Usuarios y monetización (FY2021–FY2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Daily Active People (miles de millones)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-dap" role="img" aria-label="Evolución de las personas activas diarias de Meta en miles de millones, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Average Revenue Per Person ($)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-arpp" role="img" aria-label="Evolución del ingreso medio por persona de Meta en dólares, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Tendencias publicitarias, variación interanual (%)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Ad Impressions Delivered (YoY %)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-adimpressions" role="img" aria-label="Evolución interanual de las impresiones de anuncios entregadas de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Average Price Per Ad (YoY %)</h3>
+          <div class="chart-wrap"><canvas id="chart-meta-adprice" role="img" aria-label="Evolución interanual del precio medio por anuncio de Meta, FY2021 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HERMES -->
+
+  <section class="panel" id="panel-hermes">
+    <div class="company-head">
+      <div>
+        <h2>Hermès International</h2>
+        <span class="ticker">EPA: RMS</span>
+      </div>
+      <div class="docs">
+        <a class="doc-btn" href="#" id="hermes-thesis-link" target="_blank" rel="noopener">
+          <i class="ti ti-file-text"></i> Tesis de inversión (PDF)
+        </a>
+        <a class="doc-btn" href="#" id="hermes-model-link" target="_blank" rel="noopener">
+          <i class="ti ti-table"></i> Modelo (Excel)
+        </a>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="label">Ingresos FY2025</div>
+        <div class="value">€16.002 M</div>
+        <div class="delta up">+5.5% YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen EBIT FY2025</div>
+        <div class="value">41.1%</div>
+        <div class="delta up">+0.6 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen FCF FY2025</div>
+        <div class="value">24.3%</div>
+        <div class="delta down">-0.6 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">EPS FY2025</div>
+        <div class="value">€42.96</div>
+        <div class="delta down">-1.7% YoY</div>
+      </div>
+    </div>
+
+    <div class="subtabs" id="hermes-subtabs">
+      <button class="subtab active" data-subpanel="hermes-fin">Financieros</button>
+      <button class="subtab" data-subpanel="hermes-ops">Operativos</button>
+    </div>
+
+    <div class="subpanel active" id="subpanel-hermes-fin">
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Ingresos (€M)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-revenue" role="img" aria-label="Evolución de ingresos de Hermès en millones de euros, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>EBIT (€M) y margen EBIT (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-ebit" role="img" aria-label="Evolución de EBIT en millones de euros y margen EBIT de Hermès, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Free cash flow ajustado (€M) y margen FCF (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-fcf" role="img" aria-label="Evolución del flujo de caja libre ajustado en millones de euros y margen FCF de Hermès, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>EPS (€)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-eps" role="img" aria-label="Evolución del beneficio por acción de Hermès en euros, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Dividendo por acción (€)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-dividend" role="img" aria-label="Evolución del dividendo por acción de Hermès en euros, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Caja total (€M)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-cash" role="img" aria-label="Evolución de la caja total de Hermès en millones de euros, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpanel" id="subpanel-hermes-ops">
+      <h3 class="section-title">Red de tiendas (FY2018–FY2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Total de tiendas</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-totalstores" role="img" aria-label="Evolución del número total de tiendas de Hermès, FY2018 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Eje vertical desde 250, no desde 0, para apreciar mejor la variación</div>
+        </div>
+        <div class="chart-card">
+          <h3>Branches y concessionaires</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-storetypes" role="img" aria-label="Evolución de tiendas propias y concesiones de Hermès, FY2018 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Revenue por tienda (€M)</h3>
+          <div class="chart-wrap"><canvas id="chart-hermes-revperstore" role="img" aria-label="Evolución del revenue por tienda de Hermès en millones de euros, FY2018 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Revenue por métier (2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Reparto de ingresos por métier</h3>
+          <div class="chart-wrap" style="height:280px;"><canvas id="chart-hermes-donut-metier" role="img" aria-label="Reparto porcentual de los ingresos de Hermès por métier en 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="segment-detail" id="hermes-metier-detail"></div>
+
+      <h3 class="section-title">Revenue y margen operativo por área geográfica (2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Reparto de ingresos por área geográfica</h3>
+          <div class="chart-wrap" style="height:280px;"><canvas id="chart-hermes-donut-geo" role="img" aria-label="Reparto porcentual de los ingresos de Hermès por área geográfica en 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="segment-detail" id="hermes-geo-detail"></div>
+    </div>
+  </section>
+
+  <!-- LVMH -->
+  <section class="panel" id="panel-lvmh">
+    <div class="company-head">
+      <div>
+        <h2>LVMH Moët Hennessy Louis Vuitton</h2>
+        <span class="ticker">EPA: MC</span>
+      </div>
+      <div class="docs">
+        <a class="doc-btn" href="#" id="lvmh-thesis-link" target="_blank" rel="noopener">
+          <i class="ti ti-file-text"></i> Tesis de inversión (PDF)
+        </a>
+        <a class="doc-btn" href="#" id="lvmh-model-link" target="_blank" rel="noopener">
+          <i class="ti ti-table"></i> Modelo (Excel)
+        </a>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="label">Ingresos FY2025</div>
+        <div class="value">€80.807 M</div>
+        <div class="delta down">-4.6% YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen EBIT FY2025</div>
+        <div class="value">21.2%</div>
+        <div class="delta down">-1.1 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Margen bruto FY2025</div>
+        <div class="value">66.2%</div>
+        <div class="delta down">-0.8 pp YoY</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">ROIC FY2025</div>
+        <div class="value">12.8%</div>
+        <div class="delta down">-1.8 pp YoY</div>
+      </div>
+    </div>
+
+    <div class="subtabs" id="lvmh-subtabs">
+      <button class="subtab active" data-subpanel="lvmh-fin">Financieros</button>
+      <button class="subtab" data-subpanel="lvmh-ops">Operativos</button>
+    </div>
+
+    <div class="subpanel active" id="subpanel-lvmh-fin">
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Ingresos (€M) y margen bruto (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-revenue-gm" role="img" aria-label="Evolución de ingresos en millones de euros y margen bruto de LVMH, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>EBIT (€M) y margen EBIT (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-ebit" role="img" aria-label="Evolución de EBIT en millones de euros y margen EBIT de LVMH, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Net income (€M) y margen neto (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-netincome" role="img" aria-label="Evolución del beneficio neto en millones de euros y margen neto de LVMH, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Free cash flow (€M) y margen FCF (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-fcf" role="img" aria-label="Evolución del flujo de caja libre en millones de euros y margen FCF de LVMH, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>ROIC (%)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-roic" role="img" aria-label="Evolución del ROIC de LVMH, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Net debt / EBITDA (x)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-netdebt" role="img" aria-label="Evolución de la ratio deuda neta sobre EBITDA de LVMH, FY2015 a FY2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpanel" id="subpanel-lvmh-ops">
+      <h3 class="section-title">Ingresos por región (2025)</h3>
+      <div class="region-map-wrap" id="lvmh-region-map"></div>
+      <div class="region-detail" id="lvmh-region-detail"></div>
+
+      <h3 class="section-title">Ingresos y EBIT por segmento (2025)</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Reparto de ingresos por segmento</h3>
+          <div class="chart-wrap" style="height:260px;"><canvas id="chart-lvmh-donut-revenue" role="img" aria-label="Reparto porcentual de los ingresos de LVMH por segmento de negocio en 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Reparto de EBIT por segmento</h3>
+          <div class="chart-wrap" style="height:260px;"><canvas id="chart-lvmh-donut-ebit" role="img" aria-label="Reparto porcentual del EBIT de LVMH por segmento de negocio en 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+      <div class="segment-detail" id="lvmh-segment-detail"></div>
+
+      <h3 class="section-title">Tiendas</h3>
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Número de tiendas</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-stores" role="img" aria-label="Evolución del número de tiendas de LVMH, 2020 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Revenue por tienda (€M)</h3>
+          <div class="chart-wrap"><canvas id="chart-lvmh-revperstore" role="img" aria-label="Evolución del revenue por tienda de LVMH en millones de euros, 2020 a 2025">Ver tabla de datos en el modelo adjunto.</canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+// ---- Navegación de pestañas ----
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+});
+
+// ---- Navegación de subpestañas (Financieros / Operativos) ----
+document.getElementById('booking-subtabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.subtab');
+  if (!btn) return;
+  const group = btn.closest('.subtabs');
+  group.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = btn.closest('.panel');
+  panel.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.getElementById('subpanel-' + btn.dataset.subpanel).classList.add('active');
+});
+
+// ---- Enlaces a documentos (Google Drive) ----
+document.getElementById('booking-thesis-link').href = 'https://drive.google.com/file/d/11peDepGF7qWk0OWLbCe4YEkxpnk5Df3i/view?usp=sharing';
+document.getElementById('booking-model-link').href = 'https://docs.google.com/spreadsheets/d/1HmN0UwjDarVDXwZceupbHk8azpt-iorB/edit?usp=sharing';
+
+// ---- Datos: Booking (extraídos de KPIs_Booking_Claude.xlsx) ----
+
+// Financieros: FY2015-FY2025, sin huecos
+const yearsFin = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+const revenue = [9224,10743,12681,14527,15066,6796,10958,17090,21365,23739,26917];
+const ebit = [3260,2906,4538,5341,5345,-631,2496,5102,5835,7555,8825];
+const fcf = [2781,3514,4113,4565,4172,-456,2140,5782,6469,7295,8470];
+const ebitMargin = [35.3,27.1,35.8,36.8,35.5,-9.3,22.8,29.9,27.3,31.8,32.8];
+const fcfMargin = [30.1,32.7,32.4,31.4,27.7,-6.7,19.5,33.8,30.3,30.7,31.5];
+const netIncome = [2551,2135,2341,3998,4865,59,1165,3058,4289,5882,5404];
+const eps = [1.98,1.71,1.87,3.33,4.47,0.06,1.13,3.05,4.70,6.91,6.62];
+const sharesK = [1289825,1251575,1248850,1200425,1087725,1029000,1034050,1001300,913250,851600,815975];
+
+// Operativos: sólo años con dato real (2020 vacío en la mayoría de filas -> se omite donde corresponde)
+const yearsOps6 = ['2020','2021','2022','2023','2024','2025'];
+const yearsOps5 = ['2021','2022','2023','2024','2025'];
+
+const grossBookings = [76586,121253,151000,165580,186107]; // sin dato 2020
+const roomNights = [355,591,896,1048,1144,1235]; // sí tiene 2020
+const adr = [129.59,135.33,144.08,144.74,150.69]; // sin dato 2020
+const takeRate = [14.3,14.1,14.2,14.3,14.5]; // sin dato 2020
+const marketingExp = [2179,3801,5993,6773,7278,8186]; // sí tiene 2020
+const marketingPctRev = [32.1,34.7,35.1,31.7,30.7,30.4]; // sí tiene 2020
+const merchantRev = [2117,3696,7193,10936,14142,17755]; // sí tiene 2020
+const agencyRev = [4314,6663,9003,9414,8524,7968]; // sí tiene 2020
+const advertising = [365,599,894,1015,1073,1194]; // sí tiene 2020
+const rentalCarDays = [47,62,70,83,88]; // sin dato 2020
+const airlineTickets = [15,23,36,49,68]; // sin dato 2020
+const aaMix = [29,30,33,35,36]; // sin dato 2020
+
+const chartDefaults = {
+  responsive:true, maintainAspectRatio:false,
+  scales:{
+    x:{grid:{display:false},ticks:{color:'#8b8983',font:{size:11}}},
+    y:{grid:{color:'#e5e3dc'},ticks:{color:'#8b8983',font:{size:11}}}
+  }
+};
+
+function moneyFmt(v){ return (v<0?'-':'') + '$' + Math.abs(v).toLocaleString() + 'M'; }
+function pctFmt(v){ return v+'%'; }
+
+function legendHtml(items){
+  return items.map(i=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${i.color};"></span>${i.label}</span>`).join('');
+}
+
+// Ingresos totales
+new Chart(document.getElementById('chart-booking-revenue'), {
+  type:'bar',
+  data:{labels:yearsFin,datasets:[{data:revenue,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>moneyFmt(c.parsed.y)}}}}
+});
+
+// EBIT y FCF
+new Chart(document.getElementById('chart-booking-ebit-fcf'), {
+  type:'line',
+  data:{labels:yearsFin,datasets:[
+    {label:'EBIT',data:ebit,borderColor:'#2a78d6',backgroundColor:'rgba(42,120,214,0.1)',fill:false,tension:0.2,pointRadius:3},
+    {label:'FCF (exSBC)',data:fcf,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',fill:false,tension:0.2,pointRadius:3,borderDash:[4,3]}
+  ]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+moneyFmt(c.parsed.y)}}}}
+});
+document.getElementById('chart-booking-ebit-fcf').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#2a78d6',label:'EBIT'},{color:'#1baf7a',label:'FCF (exSBC)'}])}</div>`);
+
+// Márgenes EBIT y FCF
+new Chart(document.getElementById('chart-booking-margins'), {
+  type:'line',
+  data:{labels:yearsFin,datasets:[
+    {label:'Margen EBIT',data:ebitMargin,borderColor:'#2a78d6',backgroundColor:'rgba(42,120,214,0.1)',fill:false,tension:0.2,pointRadius:3},
+    {label:'Margen FCF',data:fcfMargin,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',fill:false,tension:0.2,pointRadius:3,borderDash:[4,3]}
+  ]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+pctFmt(c.parsed.y)}}}}
+});
+document.getElementById('chart-booking-margins').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#2a78d6',label:'Margen EBIT'},{color:'#1baf7a',label:'Margen FCF'}])}</div>`);
+
+// Net income
+new Chart(document.getElementById('chart-booking-netincome'), {
+  type:'bar',
+  data:{labels:yearsFin,datasets:[{label:'Net income',data:netIncome,backgroundColor:'#1baf7a',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>moneyFmt(c.parsed.y)}}}}
+});
+
+// EPS, con el valor de cada punto anotado
+new Chart(document.getElementById('chart-booking-eps'), {
+  type:'line',
+  data:{labels:yearsFin,datasets:[{data:eps,borderColor:'#6250d6',backgroundColor:'rgba(98,80,214,0.1)',fill:true,tension:0.2,pointRadius:3,pointBackgroundColor:'#6250d6'}]},
+  plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
+  options:{...chartDefaults,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)}},
+      datalabels:{
+        align:'top', anchor:'end', offset:6, color:'#5f5e5a', font:{size:10},
+        formatter:v=>'$'+v.toFixed(2)
+      }
+    },
+    scales:{...chartDefaults.scales, y:{...chartDefaults.scales.y, suggestedMax:8}},
+    layout:{padding:{top:20}}
+  }
+});
+
+// Acciones en circulación
+new Chart(document.getElementById('chart-booking-shares'), {
+  type:'line',
+  data:{labels:yearsFin,datasets:[{data:sharesK,borderColor:'#6250d6',backgroundColor:'rgba(98,80,214,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toLocaleString()+'k'}}}}
+});
+
+// Gross bookings (2021-2025)
+new Chart(document.getElementById('chart-booking-grossbookings'), {
+  type:'bar',
+  data:{labels:yearsOps5,datasets:[{data:grossBookings,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>moneyFmt(c.parsed.y)}}}}
+});
+
+// Room nights (2020-2025)
+new Chart(document.getElementById('chart-booking-roomnights-adr'), {
+  type:'bar',
+  data:{labels:yearsOps6,datasets:[{label:'Room nights (M)',data:roomNights,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'M noches'}}}}
+});
+document.getElementById('chart-booking-roomnights-adr').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">ADR (2021–2025): $129.6 → $150.7 (línea disponible en el modelo)</div>`);
+
+// Take rate (2021-2025)
+new Chart(document.getElementById('chart-booking-takerate'), {
+  type:'line',
+  data:{labels:yearsOps5,datasets:[{data:takeRate,borderColor:'#eda100',backgroundColor:'rgba(237,161,0,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctFmt(c.parsed.y)}}}, scales:{...chartDefaults.scales, y:{...chartDefaults.scales.y,suggestedMin:13,suggestedMax:15}}}
+});
+
+// Marketing expenses como % de ingresos (2020-2025)
+new Chart(document.getElementById('chart-booking-marketing'), {
+  type:'bar',
+  data:{labels:yearsOps6,datasets:[{data:marketingPctRev,backgroundColor:'#e34948',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctFmt(c.parsed.y)+' ('+moneyFmt(marketingExp[yearsOps6.indexOf(c.label)])+')'}}}}
+});
+
+// Ingresos por línea de negocio (2020-2025)
+new Chart(document.getElementById('chart-booking-revlines'), {
+  type:'bar',
+  data:{labels:yearsOps6,datasets:[
+    {label:'Merchant',data:merchantRev,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:16},
+    {label:'Agency',data:agencyRev,backgroundColor:'#1baf7a',borderRadius:4,maxBarThickness:16},
+    {label:'Advertising',data:advertising,backgroundColor:'#eda100',borderRadius:4,maxBarThickness:16}
+  ]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+moneyFmt(c.parsed.y)}}}}
+});
+document.getElementById('chart-booking-revlines').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#2a78d6',label:'Merchant'},{color:'#1baf7a',label:'Agency'},{color:'#eda100',label:'Advertising'}])}</div>`);
+
+// Rental car days y airline tickets (2021-2025)
+new Chart(document.getElementById('chart-booking-carsflights'), {
+  type:'bar',
+  data:{labels:yearsOps5,datasets:[
+    {label:'Rental car days',data:rentalCarDays,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:16},
+    {label:'Airline tickets',data:airlineTickets,backgroundColor:'#d95926',borderRadius:4,maxBarThickness:16}
+  ]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'M'}}}}
+});
+document.getElementById('chart-booking-carsflights').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#2a78d6',label:'Rental car days'},{color:'#d95926',label:'Airline tickets'}])}</div>`);
+
+// AA mix (2021-2025)
+new Chart(document.getElementById('chart-booking-aamix'), {
+  type:'line',
+  data:{labels:yearsOps5,datasets:[{data:aaMix,borderColor:'#e87ba4',backgroundColor:'rgba(232,123,164,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctFmt(c.parsed.y)}}}}
+});
+
+// ================= LVMH =================
+
+document.getElementById('lvmh-thesis-link').href = 'https://drive.google.com/file/d/1UAsEhhYtsilEwgwZaqWNZ9nT628NjHTs/view?usp=sharing';
+document.getElementById('lvmh-model-link').href = 'https://docs.google.com/spreadsheets/d/1_II8dCOsBdEj2KPSB1NapoLFpZHmjO_l/edit?usp=sharing';
+
+document.getElementById('lvmh-subtabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.subtab');
+  if (!btn) return;
+  const group = btn.closest('.subtabs');
+  group.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = btn.closest('.panel');
+  panel.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.getElementById('subpanel-' + btn.dataset.subpanel).classList.add('active');
+});
+
+// ---- Datos financieros LVMH (Partida Contable, FY2015-FY2025) ----
+const lvmhYearsFin = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+const lvmhRevenue = [35664,37600,42636,46826,53670,44651,64215,79184,86153,84683,80807];
+const lvmhGrossMargin = [64.8,65.3,65.3,66.6,66.2,64.5,68.3,68.4,68.8,67.0,66.2];
+const lvmhEbit = [6287,6793,7983,9747,11133,7972,17155,21001,22560,18907,17099];
+const lvmhEbitMargin = [17.6,18.1,18.7,20.8,20.7,17.9,26.7,26.5,26.2,22.3,21.2];
+const lvmhNetIncome = [4732,4978,5828,7636,8760,6171,12645,16527,17822,14542,12024];
+const lvmhNetMargin = [13.3,13.2,13.7,16.3,16.3,13.8,19.7,20.9,20.7,17.2,14.9];
+const lvmhFcf = [3679,3974,4754,5452,6167,6117,13531,10113,8104,10478,11333];
+const lvmhFcfMargin = [10.3,10.6,11.2,11.6,11.5,13.7,21.1,12.8,9.4,12.4,14.0];
+const lvmhRoic = [10.6,11.0,11.3,13.5,13.6,9.6,15.7,18.2,18.2,14.6,12.8];
+const lvmhNetDebtEbitda = [0.56,0.43,0.76,0.53,0.51,0.41,0.60,0.51,0.53,0.57,0.53];
+
+// ---- Regiones (2025, con histórico 2020-2025) ----
+const lvmhRegionYears = ['2020','2021','2022','2023','2024','2025'];
+const lvmhRegions = [
+  {key:'asia', name:'Asia (ex Japón)', color:'#2a78d6', values:[15366,22365,23785,26577,23246,21389], share2025:26.5},
+  {key:'us', name:'Estados Unidos', color:'#1baf7a', values:[10647,16591,21542,21764,21554,20686], share2025:25.6},
+  {key:'europe', name:'Europa (ex Francia)', color:'#eda100', values:[7337,9860,12717,14145,14538,14530], share2025:18.0},
+  {key:'france', name:'Francia', color:'#6250d6', values:[3333,4111,6071,6830,7009,6732], share2025:8.3},
+  {key:'japan', name:'Japón', color:'#e34948', values:[3164,4384,5436,6314,7475,6378], share2025:7.9},
+  {key:'other', name:'Otros mercados', color:'#e87ba4', values:[4804,6904,9632,10523,10861,11091], share2025:13.7}
+];
+
+const regionMapEl = document.getElementById('lvmh-region-map');
+regionMapEl.innerHTML = lvmhRegions.map(r => `
+  <div class="region-block" data-region="${r.key}">
+    <div class="rname">${r.name}</div>
+    <div class="rvalue">€${r.values[5].toLocaleString()}M</div>
+    <div class="rshare">${r.share2025}% del total</div>
+    <div class="rtooltip">€${r.values[5].toLocaleString()}M · ${r.share2025}% de ingresos 2025</div>
+  </div>
+`).join('');
+
+const lvmhRegionDetailEl = document.getElementById('lvmh-region-detail');
+lvmhRegionDetailEl.innerHTML = '<div class="placeholder">Haz clic en una región para ver su evolución histórica.</div>';
+let lvmhRegionChart = null;
+
+regionMapEl.addEventListener('click', (e) => {
+  const block = e.target.closest('.region-block');
+  if (!block) return;
+  regionMapEl.querySelectorAll('.region-block').forEach(b => b.classList.remove('selected'));
+  block.classList.add('selected');
+  const region = lvmhRegions.find(r => r.key === block.dataset.region);
+  lvmhRegionDetailEl.innerHTML = `
+    <h4>${region.name} — evolución 2020–2025</h4>
+    <div class="chart-wrap" style="height:200px;"><canvas id="chart-lvmh-region-detail" role="img" aria-label="Evolución de ingresos de ${region.name} entre 2020 y 2025"></canvas></div>
+  `;
+  if (lvmhRegionChart) lvmhRegionChart.destroy();
+  lvmhRegionChart = new Chart(document.getElementById('chart-lvmh-region-detail'), {
+    type:'line',
+    data:{labels:lvmhRegionYears,datasets:[{data:region.values,borderColor:region.color,backgroundColor:region.color+'22',fill:true,tension:0.2,pointRadius:3}]},
+    options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toLocaleString()+'M'}}}}
+  });
+});
+
+// ---- Segmentos (2025, con histórico) ----
+const lvmhSegYears = ['2020','2021','2022','2023','2024','2025'];
+const lvmhSegments = [
+  {key:'fashion', name:'Fashion & Leather goods', color:'#2a78d6',
+    revenue:[21207,30896,38648,42169,41060,37770], ebit:[7188,12842,15709,16836,15230,13209], ebitMargin:[33.9,41.6,40.6,39.9,37.1,35.0],
+    revShare2025:46.7, ebitShare2025:77.3},
+  {key:'jewelry', name:'Jewelry & Watches', color:'#eda100',
+    revenue:[3356,8964,10581,10902,10577,10486], ebit:[302,1679,2017,2162,1546,1514], ebitMargin:[9.0,18.7,19.1,19.8,14.6,14.4],
+    revShare2025:13.0, ebitShare2025:8.9},
+  {key:'perfumes', name:'Perfumes & Cosmetics', color:'#1baf7a',
+    revenue:[5248,6608,7722,8271,8418,8174], ebit:[80,684,660,713,671,727], ebitMargin:[1.5,10.4,8.5,8.6,8.0,8.9],
+    revShare2025:10.1, ebitShare2025:4.3},
+  {key:'wines', name:'Wines & Spirits', color:'#e34948',
+    revenue:[4755,5974,7099,6602,5862,5358], ebit:[1388,1863,2155,2109,1356,1016], ebitMargin:[29.2,31.2,30.4,31.9,23.1,19.0],
+    revShare2025:6.6, ebitShare2025:5.9},
+  {key:'retail', name:'Selective retailing', color:'#6250d6',
+    revenue:[10155,11754,14852,17885,18262,18348], ebit:[-203,534,788,1391,1385,1780], ebitMargin:[-2.0,4.5,5.3,7.8,7.6,9.7],
+    revShare2025:22.7, ebitShare2025:10.4}
+];
+// Nota: "Other activities" (revenue negativo/pequeño, EBIT negativo) se omite de los donuts por distorsionar la proporción visual; sus cifras están en el Excel.
+
+function buildDonut(canvasId, shareKey, mode) {
+  const labels = lvmhSegments.map(s => s.name);
+  const data = lvmhSegments.map(s => s[shareKey]);
+  const colors = lvmhSegments.map(s => s.color);
+  return new Chart(document.getElementById(canvasId), {
+    type:'doughnut',
+    data:{labels, datasets:[{data, backgroundColor:colors, borderColor:'var(--card)', borderWidth:2}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:c => {
+            const seg = lvmhSegments[c.dataIndex];
+            return mode === 'ebit'
+              ? c.label+': '+c.parsed+'% del EBIT total (margen EBIT '+seg.ebitMargin[5]+'%)'
+              : c.label+': '+c.parsed+'% de los ingresos';
+          }
+        }}
+      },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const seg = lvmhSegments[elements[0].index];
+        mode === 'ebit' ? showSegmentEbitDetail(seg) : showSegmentRevenueDetail(seg);
+      }
+    }
+  });
+}
+
+buildDonut('chart-lvmh-donut-revenue', 'revShare2025', 'revenue');
+buildDonut('chart-lvmh-donut-ebit', 'ebitShare2025', 'ebit');
+
+['chart-lvmh-donut-revenue','chart-lvmh-donut-ebit'].forEach(id => {
+  document.getElementById(id).closest('.chart-card').insertAdjacentHTML('beforeend',
+    `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--text-2);">${legendHtml(lvmhSegments.map(s=>({color:s.color,label:s.name})))}</div>`);
+});
+
+const lvmhSegmentDetailEl = document.getElementById('lvmh-segment-detail');
+lvmhSegmentDetailEl.innerHTML = '<div class="placeholder">Haz clic en un segmento de cualquiera de los dos gráficos circulares: ingresos muestra su evolución de ingresos, EBIT muestra su evolución de EBIT y margen EBIT.</div>';
+let lvmhSegmentChart = null;
+
+function showSegmentRevenueDetail(seg) {
+  lvmhSegmentDetailEl.innerHTML = `
+    <h4>${seg.name} — ingresos, evolución 2020–2025</h4>
+    <div class="chart-wrap" style="height:200px;"><canvas id="chart-lvmh-segment-detail" role="img" aria-label="Evolución de ingresos de ${seg.name} entre 2020 y 2025"></canvas></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Peso 2025: ${seg.revShare2025}% de los ingresos totales</div>
+  `;
+  if (lvmhSegmentChart) lvmhSegmentChart.destroy();
+  lvmhSegmentChart = new Chart(document.getElementById('chart-lvmh-segment-detail'), {
+    type:'bar',
+    data:{labels:lvmhSegYears,datasets:[
+      {label:'Ingresos (€M)',data:seg.revenue,backgroundColor:seg.color,borderRadius:4,maxBarThickness:22}
+    ]},
+    options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toLocaleString()+'M'}}}}
+  });
+}
+
+function showSegmentEbitDetail(seg) {
+  lvmhSegmentDetailEl.innerHTML = `
+    <h4>${seg.name} — EBIT y margen EBIT, evolución 2020–2025</h4>
+    <div class="chart-wrap" style="height:200px;"><canvas id="chart-lvmh-segment-detail" role="img" aria-label="Evolución de EBIT y margen EBIT de ${seg.name} entre 2020 y 2025"></canvas></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Peso 2025: ${seg.ebitShare2025}% del EBIT total · margen EBIT 2025: ${seg.ebitMargin[5]}%</div>
+  `;
+  if (lvmhSegmentChart) lvmhSegmentChart.destroy();
+  lvmhSegmentChart = new Chart(document.getElementById('chart-lvmh-segment-detail'), {
+    data:{
+      labels:lvmhSegYears,
+      datasets:[
+        {type:'bar', label:'EBIT (€M)', data:seg.ebit, backgroundColor:seg.color+'55', borderRadius:4, maxBarThickness:22, yAxisID:'y'},
+        {type:'line', label:'Margen EBIT (%)', data:seg.ebitMargin, borderColor:seg.color, backgroundColor:seg.color, fill:false, tension:0.2, pointRadius:3, yAxisID:'y1'}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=> c.dataset.type==='bar' ? '€'+c.parsed.y.toLocaleString()+'M' : c.parsed.y+'%'}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#8b8983',font:{size:11}}},
+        y:{position:'left',grid:{color:'#e5e3dc'},ticks:{color:'#8b8983',font:{size:11}}},
+        y1:{position:'right',grid:{display:false},ticks:{color:'#8b8983',font:{size:11},callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+// ---- Tiendas ----
+const lvmhStoreYears = ['2020','2021','2022','2023','2024','2025'];
+const lvmhStores = [5003,5556,5664,6097,6307,6283];
+const lvmhRevPerStore = [8.92,11.56,13.98,14.13,13.43,12.86];
+
+// ---- Gráficos financieros: barra (importe) + línea (margen) en el mismo gráfico ----
+function buildBarLineMargin(canvasId, barData, lineData, color, barLabel, lineLabel, barUnit) {
+  return new Chart(document.getElementById(canvasId), {
+    data:{
+      labels:lvmhYearsFin,
+      datasets:[
+        {type:'bar', label:barLabel, data:barData, backgroundColor:color+'55', borderRadius:4, maxBarThickness:22, yAxisID:'y'},
+        {type:'line', label:lineLabel, data:lineData, borderColor:color, backgroundColor:color, fill:false, tension:0.2, pointRadius:3, yAxisID:'y1'}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=> c.dataset.type==='bar' ? (barUnit+c.parsed.y.toLocaleString()+'M') : (c.parsed.y+'%')}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#8b8983',font:{size:11}}},
+        y:{position:'left',grid:{color:'#e5e3dc'},ticks:{color:'#8b8983',font:{size:11}}},
+        y1:{position:'right',grid:{display:false},ticks:{color:'#8b8983',font:{size:11},callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+buildBarLineMargin('chart-lvmh-revenue-gm', lvmhRevenue, lvmhGrossMargin, '#2a78d6', 'Ingresos', 'Margen bruto', '€');
+document.getElementById('chart-lvmh-revenue-gm').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#2a78d6',label:'Ingresos (€M, barra)'},{color:'#2a78d6',label:'Margen bruto (%, línea)'}])}</div>`);
+
+buildBarLineMargin('chart-lvmh-ebit', lvmhEbit, lvmhEbitMargin, '#1baf7a', 'EBIT', 'Margen EBIT', '€');
+document.getElementById('chart-lvmh-ebit').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#1baf7a',label:'EBIT (€M, barra)'},{color:'#1baf7a',label:'Margen EBIT (%, línea)'}])}</div>`);
+
+buildBarLineMargin('chart-lvmh-netincome', lvmhNetIncome, lvmhNetMargin, '#6250d6', 'Net income', 'Margen neto', '€');
+document.getElementById('chart-lvmh-netincome').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#6250d6',label:'Net income (€M, barra)'},{color:'#6250d6',label:'Margen neto (%, línea)'}])}</div>`);
+
+buildBarLineMargin('chart-lvmh-fcf', lvmhFcf, lvmhFcfMargin, '#eda100', 'FCF', 'Margen FCF', '€');
+document.getElementById('chart-lvmh-fcf').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#eda100',label:'FCF (€M, barra)'},{color:'#eda100',label:'Margen FCF (%, línea)'}])}</div>`);
+
+new Chart(document.getElementById('chart-lvmh-roic'), {
+  type:'line',
+  data:{labels:lvmhYearsFin,datasets:[{data:lvmhRoic,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctFmt(c.parsed.y)}}}, scales:{...chartDefaults.scales, y:{...chartDefaults.scales.y, min:0}}}
+});
+
+new Chart(document.getElementById('chart-lvmh-netdebt'), {
+  type:'bar',
+  data:{labels:lvmhYearsFin,datasets:[{data:lvmhNetDebtEbitda,backgroundColor:'#5f5e5a',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(2)+'x'}}}}
+});
+
+new Chart(document.getElementById('chart-lvmh-stores'), {
+  type:'line',
+  data:{labels:lvmhStoreYears,datasets:[{data:lvmhStores,borderColor:'#2a78d6',backgroundColor:'rgba(42,120,214,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toLocaleString()+' tiendas'}}}}
+});
+
+new Chart(document.getElementById('chart-lvmh-revperstore'), {
+  type:'line',
+  data:{labels:lvmhStoreYears,datasets:[{data:lvmhRevPerStore,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toFixed(2)+'M'}}}}
+});
+
+// ================= META =================
+
+document.getElementById('meta-thesis-link').href = 'https://drive.google.com/file/d/11Ycg-gJIdR6FABbv7vlRRbScc8RaSnZy/view?usp=sharing';
+document.getElementById('meta-model-link').href = 'https://docs.google.com/spreadsheets/d/1bg-KUd0KAAmIvym9YnF916nbdIcGuxma/edit?usp=sharing';
+
+document.getElementById('meta-subtabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.subtab');
+  if (!btn) return;
+  const group = btn.closest('.subtabs');
+  group.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = btn.closest('.panel');
+  panel.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.getElementById('subpanel-' + btn.dataset.subpanel).classList.add('active');
+});
+
+// ---- Datos financieros Meta (Partida contable, FY2015-FY2025) ----
+const metaYearsFin = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+const metaRevenue = [17928,27638,40653,55838,70697,85965,117929,116609,134902,164501,200966];
+const metaEbit = [6225,12427,20203,24913,23986,32671,46753,28944,46751,69380,83276];
+const metaEbitMargin = [34.7,45.0,49.7,44.6,33.9,38.0,39.6,24.8,34.7,42.2,41.4];
+const metaEps = [1.32,3.49,5.39,7.57,6.43,10.09,13.77,8.68,14.87,23.86,23.49];
+const metaFcf = [6076,11617,17483,15359,21212,23632,38993,19044,43847,54072,46109];
+const metaFcfMargin = [33.9,42.0,43.0,27.5,30.0,27.5,33.1,16.3,32.5,32.9,22.9];
+const metaRoic = [12.8,31.0,39.9,44.0,32.4,42.1,49.2,23.2,33.7,42.1,29.8];
+const metaCapex = [-2523,-4491,-6733,-13915,-15102,-15115,-18690,-31431,-27266,-37256,-69691];
+
+new Chart(document.getElementById('chart-meta-revenue'), {
+  type:'bar',
+  data:{labels:metaYearsFin,datasets:[{data:metaRevenue,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()+'M'}}}}
+});
+
+buildBarLineMargin('chart-meta-ebit', metaEbit, metaEbitMargin, '#1baf7a', 'EBIT', 'Margen EBIT', '$');
+document.getElementById('chart-meta-ebit').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#1baf7a',label:'EBIT ($M, barra)'},{color:'#1baf7a',label:'Margen EBIT (%, línea)'}])}</div>`);
+
+new Chart(document.getElementById('chart-meta-eps'), {
+  type:'line',
+  data:{labels:metaYearsFin,datasets:[{data:metaEps,borderColor:'#6250d6',backgroundColor:'rgba(98,80,214,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)}}}}
+});
+
+buildBarLineMargin('chart-meta-fcf', metaFcf, metaFcfMargin, '#eda100', 'FCF', 'Margen FCF', '$');
+document.getElementById('chart-meta-fcf').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#eda100',label:'FCF ($M, barra)'},{color:'#eda100',label:'Margen FCF (%, línea)'}])}</div>`);
+
+new Chart(document.getElementById('chart-meta-roic'), {
+  type:'line',
+  data:{labels:metaYearsFin,datasets:[{data:metaRoic,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctFmt(c.parsed.y)}}}, scales:{...chartDefaults.scales, y:{...chartDefaults.scales.y, min:0}}}
+});
+
+new Chart(document.getElementById('chart-meta-capex'), {
+  type:'bar',
+  data:{labels:metaYearsFin,datasets:[{data:metaCapex,backgroundColor:'#5f5e5a',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Math.abs(c.parsed.y).toLocaleString()+'M'}}}}
+});
+
+// ---- Operativos: Family of Apps y Reality Labs (FY2021-FY2025) ----
+const metaYearsOps = ['2021','2022','2023','2024','2025'];
+const foaRevenue = [115655,114450,133006,162355,198759];
+const foaEbit = [56946,42661,62871,87109,102469];
+const foaMargin = [49,37,47,54,52];
+const rlRevenue = [2274,2159,1896,2146,2207];
+const rlLoss = [-10193,-13717,-16120,-17729,-19193];
+const dap = [2.82,2.96,3.19,3.35,3.58];
+const arpp = [33.68,31.79,34.72,49.63,57.03];
+const adImpressionsYoY = [10,18,28,11,12];
+const adPriceYoY = [24,-16,-9,10,9];
+
+new Chart(document.getElementById('chart-meta-foa-revenue'), {
+  type:'bar',
+  data:{labels:metaYearsOps,datasets:[{data:foaRevenue,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()+'M'}}}}
+});
+
+new Chart(document.getElementById('chart-meta-foa-ebit'), {
+  type:'bar',
+  data:{labels:metaYearsOps,datasets:[{data:foaEbit,backgroundColor:'#1baf7a',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()+'M'}}}}
+});
+
+new Chart(document.getElementById('chart-meta-foa-margin'), {
+  type:'line',
+  data:{labels:metaYearsOps,datasets:[{data:foaMargin,borderColor:'#eda100',backgroundColor:'rgba(237,161,0,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctFmt(c.parsed.y)}}}}
+});
+
+new Chart(document.getElementById('chart-meta-rl-revenue'), {
+  type:'bar',
+  data:{labels:metaYearsOps,datasets:[{data:rlRevenue,backgroundColor:'#6250d6',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()+'M'}}}}
+});
+
+new Chart(document.getElementById('chart-meta-rl-loss'), {
+  type:'bar',
+  data:{labels:metaYearsOps,datasets:[{data:rlLoss,backgroundColor:'#e34948',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'-$'+Math.abs(c.parsed.y).toLocaleString()+'M'}}}}
+});
+
+new Chart(document.getElementById('chart-meta-dap'), {
+  type:'line',
+  data:{labels:metaYearsOps,datasets:[{data:dap,borderColor:'#2a78d6',backgroundColor:'rgba(42,120,214,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'B personas'}}}}
+});
+
+new Chart(document.getElementById('chart-meta-arpp'), {
+  type:'line',
+  data:{labels:metaYearsOps,datasets:[{data:arpp,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)}}}}
+});
+
+new Chart(document.getElementById('chart-meta-adimpressions'), {
+  type:'bar',
+  data:{labels:metaYearsOps,datasets:[{data:adImpressionsYoY,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(c.parsed.y>=0?'+':'')+c.parsed.y+'%'}}}}
+});
+
+new Chart(document.getElementById('chart-meta-adprice'), {
+  type:'bar',
+  data:{labels:metaYearsOps,datasets:[{data:adPriceYoY,backgroundColor:'#e34948',borderRadius:4,maxBarThickness:26}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(c.parsed.y>=0?'+':'')+c.parsed.y+'%'}}}}
+});
+
+// ================= HERMÈS =================
+
+document.getElementById('hermes-thesis-link').href = 'https://drive.google.com/file/d/1w2E3WDlOlZlJy-H2VN1TEPqgyToQ_SoU/view?usp=sharing';
+document.getElementById('hermes-model-link').href = 'https://docs.google.com/spreadsheets/d/1EcZcJPYAloyKOQu24tzjxEEJQmjBgfwz/edit?usp=sharing';
+
+document.getElementById('hermes-subtabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.subtab');
+  if (!btn) return;
+  const group = btn.closest('.subtabs');
+  group.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = btn.closest('.panel');
+  panel.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.getElementById('subpanel-' + btn.dataset.subpanel).classList.add('active');
+});
+
+// ---- Datos financieros Hermès (Partida contable, FY2015-FY2025) ----
+const hermesYearsFin = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+const hermesRevenue = [4841,5202,5549,5966,6883,6389,8982,11602,13427,15170,16002];
+const hermesEbit = [1541,1697,1922,2128,2339,2072,3531,4697,5650,6149,6569];
+const hermesEbitMargin = [31.8,32.6,34.6,35.7,34.0,32.4,39.3,40.5,42.1,40.5,41.1];
+const hermesFcf = [972,1259,1390,1447,1407,995,2661,3405,3192,3767,3881];
+const hermesFcfMargin = [20.1,24.2,25.0,24.3,20.4,15.6,29.6,29.3,23.8,24.8,24.3];
+const hermesEps = [9.14,10.40,11.61,13.29,14.47,13.10,23.06,31.74,40.22,43.72,42.96];
+const hermesDividend = [8.00,3.43,3.82,9.14,4.63,4.67,4.67,8.12,13.22,25.78,26.62];
+const hermesCash = [1589,2329,2932,3479,4384,4733,6696,9225,10625,11642,12239];
+
+new Chart(document.getElementById('chart-hermes-revenue'), {
+  type:'bar',
+  data:{labels:hermesYearsFin,datasets:[{data:hermesRevenue,backgroundColor:'#e2793b',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toLocaleString()+'M'}}}}
+});
+
+buildBarLineMargin('chart-hermes-ebit', hermesEbit, hermesEbitMargin, '#1baf7a', 'EBIT', 'Margen EBIT', '€');
+document.getElementById('chart-hermes-ebit').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#1baf7a',label:'EBIT (€M, barra)'},{color:'#1baf7a',label:'Margen EBIT (%, línea)'}])}</div>`);
+
+buildBarLineMargin('chart-hermes-fcf', hermesFcf, hermesFcfMargin, '#eda100', 'FCF ajustado', 'Margen FCF', '€');
+document.getElementById('chart-hermes-fcf').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#eda100',label:'FCF ajustado (€M, barra)'},{color:'#eda100',label:'Margen FCF (%, línea)'}])}</div>`);
+
+new Chart(document.getElementById('chart-hermes-eps'), {
+  type:'line',
+  data:{labels:hermesYearsFin,datasets:[{data:hermesEps,borderColor:'#6250d6',backgroundColor:'rgba(98,80,214,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toFixed(2)}}}}
+});
+
+new Chart(document.getElementById('chart-hermes-dividend'), {
+  type:'bar',
+  data:{labels:hermesYearsFin,datasets:[{data:hermesDividend,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:22}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toFixed(2)}}}}
+});
+
+new Chart(document.getElementById('chart-hermes-cash'), {
+  type:'line',
+  data:{labels:hermesYearsFin,datasets:[{data:hermesCash,borderColor:'#5f5e5a',backgroundColor:'rgba(95,94,90,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toLocaleString()+'M'}}}}
+});
+
+// ---- Operativos: tiendas (FY2018-FY2025) ----
+const hermesStoreYears = ['2018','2019','2020','2021','2022','2023','2024','2025'];
+const hermesTotalStores = [310,311,306,303,300,294,293,294];
+const hermesBranches = [219,223,221,221,222,225,230,234];
+const hermesConcessionaires = [91,88,85,82,78,69,63,60];
+const hermesRevPerStore = [28.97,37.31,43.88,50.07,53.34,58.78,63.70,68.56];
+
+new Chart(document.getElementById('chart-hermes-totalstores'), {
+  type:'line',
+  data:{labels:hermesStoreYears,datasets:[{data:hermesTotalStores,borderColor:'#e2793b',backgroundColor:'rgba(226,121,59,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+' tiendas'}}}, scales:{...chartDefaults.scales, y:{...chartDefaults.scales.y, min:250, suggestedMax:320}}}
+});
+
+new Chart(document.getElementById('chart-hermes-storetypes'), {
+  type:'bar',
+  data:{labels:hermesStoreYears,datasets:[
+    {label:'Branches',data:hermesBranches,backgroundColor:'#2a78d6',borderRadius:4,maxBarThickness:18},
+    {label:'Concessionaires',data:hermesConcessionaires,backgroundColor:'#eda100',borderRadius:4,maxBarThickness:18}
+  ]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y}}}}
+});
+document.getElementById('chart-hermes-storetypes').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-2);">${legendHtml([{color:'#2a78d6',label:'Branches'},{color:'#eda100',label:'Concessionaires'}])}</div>`);
+
+new Chart(document.getElementById('chart-hermes-revperstore'), {
+  type:'line',
+  data:{labels:hermesStoreYears,datasets:[{data:hermesRevPerStore,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',fill:true,tension:0.2,pointRadius:3}]},
+  options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toFixed(2)+'M'}}}}
+});
+
+// ---- Revenue por métier (2018-2025) ----
+const hermesMetierYears = ['2018','2019','2020','2021','2022','2023','2024','2025'];
+const hermesMetiers = [
+  {key:'leather', name:'Leather Goods & Saddlery', color:'#e2793b', revenue:[2976,3414,3209,4091,4963,5547,6457,7070], share2025:44.2},
+  {key:'rtw', name:'Ready-to-Wear & Accessories', color:'#2a78d6', revenue:[1310,1574,1409,2219,3152,3879,4405,4525], share2025:28.3},
+  {key:'silk', name:'Silk & Textiles', color:'#eda100', revenue:[537,592,452,669,842,932,950,964], share2025:6.0},
+  {key:'other-hermes', name:'Other Hermès sectors', color:'#1baf7a', revenue:[425,525,643,1001,1371,1653,1909,2055], share2025:12.8},
+  {key:'perfume', name:'Perfume & Beauty', color:'#6250d6', revenue:[312,326,263,385,448,492,535,489], share2025:3.1},
+  {key:'watches', name:'Watches', color:'#e34948', revenue:[169,193,196,337,519,611,577,549], share2025:3.4},
+  {key:'other-products', name:'Other products', color:'#e87ba4', revenue:[238,258,218,279,306,313,337,349], share2025:2.2}
+];
+
+const metierDonut = new Chart(document.getElementById('chart-hermes-donut-metier'), {
+  type:'doughnut',
+  data:{labels:hermesMetiers.map(m=>m.name), datasets:[{data:hermesMetiers.map(m=>m.share2025), backgroundColor:hermesMetiers.map(m=>m.color), borderColor:'var(--card)', borderWidth:2}]},
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+'% de los ingresos'}}},
+    onClick:(evt,elements)=>{
+      if(!elements.length) return;
+      showMetierDetail(hermesMetiers[elements[0].index]);
+    }
+  }
+});
+document.getElementById('chart-hermes-donut-metier').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--text-2);">${legendHtml(hermesMetiers.map(m=>({color:m.color,label:m.name})))}</div>`);
+
+const hermesMetierDetailEl = document.getElementById('hermes-metier-detail');
+hermesMetierDetailEl.innerHTML = '<div class="placeholder">Haz clic en un métier del gráfico circular para ver su evolución de ingresos.</div>';
+let hermesMetierChart = null;
+
+function showMetierDetail(metier) {
+  hermesMetierDetailEl.innerHTML = `
+    <h4>${metier.name} — ingresos, evolución FY2018–FY2025</h4>
+    <div class="chart-wrap" style="height:200px;"><canvas id="chart-hermes-metier-detail" role="img" aria-label="Evolución de ingresos de ${metier.name} entre FY2018 y FY2025"></canvas></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Peso 2025: ${metier.share2025}% de los ingresos totales</div>
+  `;
+  if (hermesMetierChart) hermesMetierChart.destroy();
+  hermesMetierChart = new Chart(document.getElementById('chart-hermes-metier-detail'), {
+    type:'bar',
+    data:{labels:hermesMetierYears,datasets:[{data:metier.revenue,backgroundColor:metier.color,borderRadius:4,maxBarThickness:22}]},
+    options:{...chartDefaults, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'€'+c.parsed.y.toLocaleString()+'M'}}}}
+  });
+}
+
+// ---- Revenue y margen operativo por área geográfica (2018-2025) ----
+const hermesGeoYears = ['2018','2019','2020','2021','2022','2023','2024','2025'];
+const hermesGeos = [
+  {key:'france', name:'Francia', color:'#2a78d6',
+    revenue:[802,867,620,838,1064,1274,1447,1575], margin:[34.5,36.1,25.7,34,39,40,44,45], share2025:9.8},
+  {key:'europe', name:'Europa (ex Francia)', color:'#1baf7a',
+    revenue:[1107,1202,953,1303,1536,1818,2147,2362], margin:[27.7,28.6,20.5,29,28,32,33,34], share2025:14.8},
+  {key:'japan', name:'Japón', color:'#e34948',
+    revenue:[748,864,834,977,1101,1260,1437,1591], margin:[36.8,36.9,35.0,39,40,40,39,39], share2025:9.9},
+  {key:'asia', name:'Asia-Pacífico (ex Japón)', color:'#eda100',
+    revenue:[2142,2590,2915,4251,5556,6273,6648,6702], margin:[44.3,41.7,44.2,47,47,49,40,41], share2025:41.9},
+  {key:'americas', name:'Americas', color:'#6250d6',
+    revenue:[1059,1241,959,1458,2138,2502,2865,3075], margin:[35.9,34.5,23.8,36,34,36,35,36], share2025:19.2},
+  {key:'other', name:'Otros (Oriente Medio)', color:'#e87ba4',
+    revenue:[108,120,108,156,207,299,627,697], margin:[12.2,28.1,22.8,28,28,30,35,38], share2025:4.4}
+];
+
+const geoDonut = new Chart(document.getElementById('chart-hermes-donut-geo'), {
+  type:'doughnut',
+  data:{labels:hermesGeos.map(g=>g.name), datasets:[{data:hermesGeos.map(g=>g.share2025), backgroundColor:hermesGeos.map(g=>g.color), borderColor:'var(--card)', borderWidth:2}]},
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
+      const geo = hermesGeos[c.dataIndex];
+      return c.label+': '+c.parsed+'% de los ingresos (margen operativo '+geo.margin[7]+'%)';
+    }}}},
+    onClick:(evt,elements)=>{
+      if(!elements.length) return;
+      showGeoDetail(hermesGeos[elements[0].index]);
+    }
+  }
+});
+document.getElementById('chart-hermes-donut-geo').closest('.chart-card').insertAdjacentHTML('beforeend',
+  `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--text-2);">${legendHtml(hermesGeos.map(g=>({color:g.color,label:g.name})))}</div>`);
+
+const hermesGeoDetailEl = document.getElementById('hermes-geo-detail');
+hermesGeoDetailEl.innerHTML = '<div class="placeholder">Haz clic en un área geográfica del gráfico circular para ver su evolución de ingresos y margen operativo.</div>';
+let hermesGeoChart = null;
+
+function showGeoDetail(geo) {
+  hermesGeoDetailEl.innerHTML = `
+    <h4>${geo.name} — ingresos y margen operativo, evolución FY2018–FY2025</h4>
+    <div class="chart-wrap" style="height:200px;"><canvas id="chart-hermes-geo-detail" role="img" aria-label="Evolución de ingresos y margen operativo de ${geo.name} entre FY2018 y FY2025"></canvas></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Peso 2025: ${geo.share2025}% de los ingresos totales</div>
+  `;
+  if (hermesGeoChart) hermesGeoChart.destroy();
+  hermesGeoChart = new Chart(document.getElementById('chart-hermes-geo-detail'), {
+    data:{
+      labels:hermesGeoYears,
+      datasets:[
+        {type:'bar', label:'Revenue (€M)', data:geo.revenue, backgroundColor:geo.color+'55', borderRadius:4, maxBarThickness:22, yAxisID:'y'},
+        {type:'line', label:'Margen operativo (%)', data:geo.margin, borderColor:geo.color, backgroundColor:geo.color, fill:false, tension:0.2, pointRadius:3, yAxisID:'y1'}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=> c.dataset.type==='bar' ? '€'+c.parsed.y.toLocaleString()+'M' : c.parsed.y+'%'}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#8b8983',font:{size:11}}},
+        y:{position:'left',grid:{color:'#e5e3dc'},ticks:{color:'#8b8983',font:{size:11}}},
+        y1:{position:'right',grid:{display:false},ticks:{color:'#8b8983',font:{size:11},callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
