@@ -93,6 +93,21 @@
   .chart-card h3{font-size:13px;font-weight:700;margin:0 0 14px;color:var(--text-2);}
   .chart-wrap{position:relative;height:220px;}
 
+  .donut-legend{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(152px,1fr));
+    gap:1px 10px;margin-top:14px;
+  }
+  .donut-legend-item{
+    display:flex;align-items:center;gap:8px;width:100%;
+    padding:5px 7px;border:none;background:none;border-radius:8px;
+    font:inherit;font-size:12px;color:var(--text-2);text-align:left;cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .donut-legend-item:hover,.donut-legend-item:focus-visible{background:var(--bg);color:var(--text);outline:none;}
+  .donut-legend-item .dot{width:9px;height:9px;border-radius:3px;flex:none;}
+  .donut-legend-item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .donut-legend-item .val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+
   .empty{color:var(--text-muted);font-size:13px;padding:40px 0;text-align:center;}
 
   .section-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin:36px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
@@ -733,6 +748,138 @@ function legendHtml(items){
   return items.map(i=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${i.color};"></span>${i.label}</span>`).join('');
 }
 
+// ---- Gráficos circulares (anillo + etiqueta central + leyenda interactiva) ----
+const DONUT_FONT = '-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif';
+
+function wrapLines(ctx, text, maxWidth, maxLines){
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (let i = 0; i < words.length; i++){
+    const test = line ? line + ' ' + words[i] : words[i];
+    if (line && ctx.measureText(test).width > maxWidth){
+      lines.push(line);
+      if (lines.length === maxLines - 1){
+        line = words.slice(i).join(' '); // última línea: el resto, recortado abajo
+        break;
+      }
+      line = words[i];
+    } else {
+      line = test;
+    }
+  }
+  lines.push(line);
+  return lines.slice(0, maxLines).map(l => {
+    while (l.length > 3 && ctx.measureText(l).width > maxWidth) l = l.slice(0, -2) + '…';
+    return l;
+  });
+}
+
+// Escribe en el hueco del anillo el peso del segmento activo (o del mayor, en reposo).
+const donutCenterPlugin = {
+  id:'donutCenter',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts || !opts.items) return;
+    const arc = chart.getDatasetMeta(0).data[0];
+    if (!arc) return;
+    const active = chart.getActiveElements();
+    const item = opts.items[active.length ? active[0].index : opts.leadIndex];
+    if (!item) return;
+
+    const ctx = chart.ctx;
+    const cx = arc.x, cy = arc.y;
+    const inner = arc.innerRadius || 60;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (opts.title){
+      ctx.fillStyle = '#8b90a3';
+      ctx.font = '700 9px '+DONUT_FONT;
+      ctx.fillText(opts.title.toUpperCase(), cx, cy - inner*0.42);
+    }
+    ctx.fillStyle = '#161a2b';
+    ctx.font = '700 25px '+DONUT_FONT;
+    ctx.fillText(item.value + '%', cx, cy - inner*0.02);
+
+    ctx.fillStyle = '#565c72';
+    ctx.font = '500 11px '+DONUT_FONT;
+    wrapLines(ctx, item.name, inner*1.55, 2)
+      .forEach((l,i) => ctx.fillText(l, cx, cy + inner*0.38 + i*13));
+    ctx.restore();
+  }
+};
+
+/**
+ * items: [{name, color, value, source}]  ·  opts: {centerTitle, tooltipLabel(item), onSelect(item)}
+ */
+function makeDonut(canvasId, items, opts){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const card = canvas.closest('.chart-card');
+  const leadIndex = items.reduce((best,it,i) => it.value > items[best].value ? i : best, 0);
+
+  const chart = new Chart(canvas, {
+    type:'doughnut',
+    data:{
+      labels: items.map(i => i.name),
+      datasets:[{
+        data: items.map(i => i.value),
+        backgroundColor: items.map(i => i.color),
+        borderWidth:0, borderRadius:6, spacing:3,
+        hoverOffset:9, hoverBorderWidth:0
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:'70%', radius:'92%', layout:{padding:8},
+      animation:{animateRotate:true, animateScale:false, duration:750, easing:'easeOutQuart'},
+      onHover:(e, els) => { if (e.native) e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+      plugins:{
+        legend:{display:false},
+        donutCenter:{items, title:opts.centerTitle, leadIndex},
+        tooltip:{
+          backgroundColor:'rgba(22,26,43,0.94)', padding:10, cornerRadius:10,
+          titleFont:{size:12,weight:'700'}, bodyFont:{size:12}, bodyColor:'#c9ccda',
+          displayColors:false, caretSize:5,
+          callbacks:{
+            title: c => c[0].label,
+            label: c => opts.tooltipLabel(items[c.dataIndex])
+          }
+        }
+      },
+      onClick:(evt, els) => { if (els.length && opts.onSelect) opts.onSelect(items[els[0].index].source); }
+    },
+    plugins:[donutCenterPlugin]
+  });
+
+  const legend = document.createElement('div');
+  legend.className = 'donut-legend';
+  legend.innerHTML = items.map((it,i) =>
+    `<button type="button" class="donut-legend-item" data-i="${i}">
+       <span class="dot" style="background:${it.color};"></span>
+       <span class="nm">${it.name}</span>
+       <span class="val">${it.value}%</span>
+     </button>`).join('');
+  card.appendChild(legend);
+
+  const setActive = i => {
+    chart.setActiveElements(i === null ? [] : [{datasetIndex:0, index:i}]);
+    chart.update('none');
+  };
+  legend.addEventListener('mouseover', e => {
+    const btn = e.target.closest('.donut-legend-item');
+    if (btn) setActive(+btn.dataset.i);
+  });
+  legend.addEventListener('mouseleave', () => setActive(null));
+  legend.addEventListener('click', e => {
+    const btn = e.target.closest('.donut-legend-item');
+    if (btn && opts.onSelect) opts.onSelect(items[+btn.dataset.i].source);
+  });
+
+  return chart;
+}
+
 // Ingresos totales
 new Chart(document.getElementById('chart-booking-revenue'), {
   type:'bar',
@@ -953,41 +1100,18 @@ const lvmhSegments = [
 // Nota: "Other activities" (revenue negativo/pequeño, EBIT negativo) se omite de los donuts por distorsionar la proporción visual; sus cifras están en el Excel.
 
 function buildDonut(canvasId, shareKey, mode) {
-  const labels = lvmhSegments.map(s => s.name);
-  const data = lvmhSegments.map(s => s[shareKey]);
-  const colors = lvmhSegments.map(s => s.color);
-  return new Chart(document.getElementById(canvasId), {
-    type:'doughnut',
-    data:{labels, datasets:[{data, backgroundColor:colors, borderColor:'var(--card)', borderWidth:2}]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{
-          label:c => {
-            const seg = lvmhSegments[c.dataIndex];
-            return mode === 'ebit'
-              ? c.label+': '+c.parsed+'% del EBIT total (margen EBIT '+seg.ebitMargin[5]+'%)'
-              : c.label+': '+c.parsed+'% de los ingresos';
-          }
-        }}
-      },
-      onClick: (evt, elements) => {
-        if (!elements.length) return;
-        const seg = lvmhSegments[elements[0].index];
-        mode === 'ebit' ? showSegmentEbitDetail(seg) : showSegmentRevenueDetail(seg);
-      }
-    }
+  const items = lvmhSegments.map(s => ({name:s.name, color:s.color, value:s[shareKey], source:s}));
+  return makeDonut(canvasId, items, {
+    centerTitle: mode === 'ebit' ? 'EBIT 2025' : 'Ingresos 2025',
+    tooltipLabel: it => mode === 'ebit'
+      ? it.value+'% del EBIT total · margen EBIT '+it.source.ebitMargin[5]+'%'
+      : it.value+'% de los ingresos',
+    onSelect: seg => mode === 'ebit' ? showSegmentEbitDetail(seg) : showSegmentRevenueDetail(seg)
   });
 }
 
 buildDonut('chart-lvmh-donut-revenue', 'revShare2025', 'revenue');
 buildDonut('chart-lvmh-donut-ebit', 'ebitShare2025', 'ebit');
-
-['chart-lvmh-donut-revenue','chart-lvmh-donut-ebit'].forEach(id => {
-  document.getElementById(id).closest('.chart-card').insertAdjacentHTML('beforeend',
-    `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--text-2);">${legendHtml(lvmhSegments.map(s=>({color:s.color,label:s.name})))}</div>`);
-});
 
 const lvmhSegmentDetailEl = document.getElementById('lvmh-segment-detail');
 lvmhSegmentDetailEl.innerHTML = '<div class="placeholder">Haz clic en un segmento de cualquiera de los dos gráficos circulares: ingresos muestra su evolución de ingresos, EBIT muestra su evolución de EBIT y margen EBIT.</div>';
@@ -1335,20 +1459,13 @@ const hermesMetiers = [
   {key:'other-products', name:'Other products', color:'#e87ba4', revenue:[238,258,218,279,306,313,337,349], share2025:2.2}
 ];
 
-const metierDonut = new Chart(document.getElementById('chart-hermes-donut-metier'), {
-  type:'doughnut',
-  data:{labels:hermesMetiers.map(m=>m.name), datasets:[{data:hermesMetiers.map(m=>m.share2025), backgroundColor:hermesMetiers.map(m=>m.color), borderColor:'var(--card)', borderWidth:2}]},
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+'% de los ingresos'}}},
-    onClick:(evt,elements)=>{
-      if(!elements.length) return;
-      showMetierDetail(hermesMetiers[elements[0].index]);
-    }
-  }
-});
-document.getElementById('chart-hermes-donut-metier').closest('.chart-card').insertAdjacentHTML('beforeend',
-  `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--text-2);">${legendHtml(hermesMetiers.map(m=>({color:m.color,label:m.name})))}</div>`);
+const metierDonut = makeDonut('chart-hermes-donut-metier',
+  hermesMetiers.map(m => ({name:m.name, color:m.color, value:m.share2025, source:m})),
+  {
+    centerTitle:'Ingresos 2025',
+    tooltipLabel: it => it.value+'% de los ingresos',
+    onSelect: m => showMetierDetail(m)
+  });
 
 const hermesMetierDetailEl = document.getElementById('hermes-metier-detail');
 hermesMetierDetailEl.innerHTML = '<div class="placeholder">Haz clic en un métier del gráfico circular para ver su evolución de ingresos.</div>';
@@ -1385,23 +1502,13 @@ const hermesGeos = [
     revenue:[108,120,108,156,207,299,627,697], margin:[12.2,28.1,22.8,28,28,30,35,38], share2025:4.4}
 ];
 
-const geoDonut = new Chart(document.getElementById('chart-hermes-donut-geo'), {
-  type:'doughnut',
-  data:{labels:hermesGeos.map(g=>g.name), datasets:[{data:hermesGeos.map(g=>g.share2025), backgroundColor:hermesGeos.map(g=>g.color), borderColor:'var(--card)', borderWidth:2}]},
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
-      const geo = hermesGeos[c.dataIndex];
-      return c.label+': '+c.parsed+'% de los ingresos (margen operativo '+geo.margin[7]+'%)';
-    }}}},
-    onClick:(evt,elements)=>{
-      if(!elements.length) return;
-      showGeoDetail(hermesGeos[elements[0].index]);
-    }
-  }
-});
-document.getElementById('chart-hermes-donut-geo').closest('.chart-card').insertAdjacentHTML('beforeend',
-  `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--text-2);">${legendHtml(hermesGeos.map(g=>({color:g.color,label:g.name})))}</div>`);
+const geoDonut = makeDonut('chart-hermes-donut-geo',
+  hermesGeos.map(g => ({name:g.name, color:g.color, value:g.share2025, source:g})),
+  {
+    centerTitle:'Ingresos 2025',
+    tooltipLabel: it => it.value+'% de los ingresos · margen operativo '+it.source.margin[7]+'%',
+    onSelect: g => showGeoDetail(g)
+  });
 
 const hermesGeoDetailEl = document.getElementById('hermes-geo-detail');
 hermesGeoDetailEl.innerHTML = '<div class="placeholder">Haz clic en un área geográfica del gráfico circular para ver su evolución de ingresos y margen operativo.</div>';
