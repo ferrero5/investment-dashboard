@@ -1,0 +1,63 @@
+name: Sincronizar dashboard desde Drive
+
+# Cada dia descarga dashboard-empresas.html de Google Drive y, si ha cambiado,
+# lo publica como index.html. Tambien se puede lanzar a mano desde la pestana
+# Actions -> Sincronizar dashboard desde Drive -> Run workflow.
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # 07:00 UTC = 09:00 en Espana (verano) / 08:00 (invierno)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-dashboard
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar el HTML desde Google Drive
+        env:
+          # Si algun dia cambia el archivo de Drive, basta con actualizar este ID
+          # (o crear el secreto DRIVE_FILE_ID, que tiene prioridad sobre el).
+          FILE_ID: ${{ secrets.DRIVE_FILE_ID || '1HbB8w8yBwI7iMzso-whazZR_i7Tb6qd6' }}
+        run: |
+          set -euo pipefail
+          curl -sfL --retry 3 --retry-delay 5 -o nuevo.html \
+            "https://drive.google.com/uc?export=download&id=${FILE_ID}"
+
+      - name: Comprobar que lo descargado es el dashboard
+        run: |
+          set -euo pipefail
+          bytes=$(stat -c%s nuevo.html)
+          echo "Descargados $bytes bytes"
+          if [ "$bytes" -lt 20000 ]; then
+            echo "::error::Archivo demasiado pequeno ($bytes bytes): Drive habra devuelto una pagina de error, o el enlace ya no esta compartido."
+            exit 1
+          fi
+          if ! grep -q 'id="tabs"' nuevo.html; then
+            echo "::error::Lo descargado no parece el dashboard: falta el bloque de pestanas."
+            exit 1
+          fi
+
+      - name: Publicar si ha cambiado
+        run: |
+          set -euo pipefail
+          if cmp -s nuevo.html index.html; then
+            echo "Sin cambios: no hay nada que publicar."
+            rm nuevo.html
+            exit 0
+          fi
+          mv nuevo.html index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m "Actualiza dashboard desde Drive ($(date -u +%Y-%m-%d))"
+          git push
+          echo "Publicado."
