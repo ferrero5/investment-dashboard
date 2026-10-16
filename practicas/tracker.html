@@ -317,6 +317,8 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
     const arr = list.slice();
     const respRank = { contactaran: 0, "": 1, no_responde: 2, no_buscan: 3 };
     arr.sort((a, b) => {
+      const g = (b.applied ? 1 : 0) - (a.applied ? 1 : 0);
+      if (g) return g;
       switch (by) {
         case "name": return name(a, b);
         case "real": return (REAL[b.realism] || 0) - (REAL[a.realism] || 0) || prio(a, b);
@@ -407,8 +409,7 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
       '<div class="seg" role="group" aria-label="Filtro">' +
       seg("all", "Todas") + seg("pending", "Pendientes") + seg("applied", "Aplicadas") + "</div>" +
       '<label class="sortwrap" for="sort">Ordenar<select id="sort">' +
-      opt("prio", "Prioridad") + opt("name", "Nombre (A–Z)") + opt("real", "Realismo") + opt("pendFirst", "Pendientes primero") +
-      opt("appFirst", "Aplicadas primero") + opt("resp", "Respuesta") + opt("date", "Fecha de aplicación") + "</select></label>" +
+      opt("prio", "Prioridad") + opt("name", "Nombre (A–Z)") + opt("real", "Realismo") + opt("resp", "Respuesta") + opt("date", "Fecha de aplicación") + "</select></label>" +
       (state.readOnly ? "" : '<button class="btn primary" data-act="newCompany">+ Añadir empresa</button>') +
       "</div>" +
       '<div class="cols" aria-hidden="true"><span>Aplicada</span><span style="text-align:right">#</span><span>Empresa</span><span>Rol a pedir</span><span>Realismo</span><span>Respuesta</span><span></span></div>' +
