@@ -1,0 +1,663 @@
+<title>Candidaturas Prácticas 2027</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: cabecera con resumen global → pestañas de sector → barra de herramientas → lista densa de filas expandibles (tarjetas en móvil) */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15202b;
+  --muted: #5b6875;
+  --line: #d5dce3;
+  --accent: #2346a0;
+  --accent-soft: #e3e9f8;
+  --ok: #1e8a4c;
+  --ok-soft: #dff2e7;
+  --warn: #9a6512;
+  --warn-soft: #f7ecd8;
+  --bad: #b4443a;
+  --bad-soft: #f8e3e0;
+  --info: #1f6f8b;
+  --info-soft: #ddeff4;
+  --shadow: 0 1px 2px rgba(21,32,43,.06), 0 8px 24px rgba(21,32,43,.08);
+  --f-display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #17202a; --surface-2: #1c2733; --ink: #e6ecf2; --muted: #93a1af; --line: #2a3643;
+    --accent: #8fa9f0; --accent-soft: #1f2b47; --ok: #3fbf74; --ok-soft: #143323; --warn: #e0a84a; --warn-soft: #3a2c14;
+    --bad: #e07a70; --bad-soft: #3b1f1c; --info: #5fb6d3; --info-soft: #142f3a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #17202a; --surface-2: #1c2733; --ink: #e6ecf2; --muted: #93a1af; --line: #2a3643;
+  --accent: #8fa9f0; --accent-soft: #1f2b47; --ok: #3fbf74; --ok-soft: #143323; --warn: #e0a84a; --warn-soft: #3a2c14;
+  --bad: #e07a70; --bad-soft: #3b1f1c; --info: #5fb6d3; --info-soft: #142f3a;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+.eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 4vw, 34px); letter-spacing: -.02em; line-height: 1.05; margin: 4px 0 0; text-wrap: balance; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 92px; }
+.stat b { display: block; font-family: var(--f-mono); font-size: 20px; font-weight: 600; line-height: 1.1; }
+.stat span { font-size: 11.5px; color: var(--muted); }
+.stat.ok b { color: var(--ok); }
+.stat.info b { color: var(--info); }
+.stat.bad b { color: var(--bad); }
+
+/* Tabs */
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.tab {
+  flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; text-align: left; min-width: 168px;
+  background: transparent; border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px;
+}
+.tab:hover { background: var(--surface); }
+.tab[aria-selected="true"] { background: var(--surface); border-color: var(--ink); box-shadow: var(--shadow); }
+.tab .tn { font-weight: 700; font-size: 14.5px; }
+.tab .tc { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.bar { height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ok); }
+.tab.add { justify-content: center; align-items: center; min-width: 120px; border-style: dashed; color: var(--muted); font-weight: 600; }
+
+/* Sector panel */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.phead { display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: space-between; align-items: flex-start; padding: 18px 18px 14px; border-bottom: 1px solid var(--line); }
+.phead h2 { font-family: var(--f-display); font-size: 22px; font-weight: 750; margin: 0; letter-spacing: -.01em; }
+.phead p { margin: 4px 0 0; color: var(--muted); max-width: 68ch; }
+.pactions { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 13px; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.btn.primary:hover { opacity: .9; }
+.btn.danger { color: var(--bad); }
+.btn.danger.solid { background: var(--bad); color: #fff; border-color: var(--bad); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.search { flex: 1 1 220px; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 7px 11px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.sortwrap { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 8px; }
+
+/* List */
+.cols, .row { display: grid; grid-template-columns: 44px 38px minmax(0, 2.2fr) minmax(0, 2fr) 92px minmax(0, 1.35fr) 36px; gap: 10px; align-items: center; }
+.cols { padding: 8px 18px; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.item { border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item.applied { background: linear-gradient(90deg, var(--ok-soft), transparent 40%); }
+.row { padding: 10px 18px; }
+.tick {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface);
+  display: grid; place-items: center; transition: background .15s, border-color .15s, transform .1s;
+}
+.tick svg { width: 16px; height: 16px; opacity: 0; transition: opacity .15s; }
+.tick:hover { border-color: var(--ok); }
+.tick:hover svg { opacity: .35; stroke: var(--ok); }
+.tick[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); }
+.tick[aria-pressed="true"] svg { opacity: 1; stroke: #fff; }
+.tick:active { transform: scale(.92); }
+.prio { font-family: var(--f-mono); font-size: 12px; color: var(--muted); text-align: right; }
+.nm { min-width: 0; }
+.nm b { display: block; font-weight: 700; font-size: 14.5px; overflow-wrap: anywhere; }
+.nm small { color: var(--muted); font-size: 12px; }
+.also { display: inline-block; margin-top: 3px; font-size: 11px; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; }
+.role { min-width: 0; color: var(--ink); font-size: 13px; overflow-wrap: anywhere; }
+.role.none { color: var(--muted); }
+.meter { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.meter i { display: inline-flex; gap: 2px; }
+.meter i s { width: 7px; height: 12px; border-radius: 2px; background: var(--line); text-decoration: none; display: block; }
+.meter i s.on { background: var(--ink); }
+.meter.none { color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.p-wait { color: var(--muted); background: var(--surface-2); border: 1px dashed var(--line); }
+.p-pending { color: var(--warn); background: var(--warn-soft); }
+.p-no_responde { color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); }
+.p-no_buscan { color: var(--bad); background: var(--bad-soft); }
+.p-contactaran { color: var(--info); background: var(--info-soft); }
+.chev { width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.chev:hover { background: var(--surface-2); }
+.chev svg { width: 16px; height: 16px; transition: transform .2s; }
+.item.open .chev svg { transform: rotate(180deg); }
+
+.detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 4px 18px 18px 110px; }
+.detail h4 { margin: 0 0 6px; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.notes { margin: 0; white-space: pre-wrap; color: var(--ink); max-width: 65ch; }
+.notes.empty { color: var(--muted); font-style: italic; }
+.dl { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.dl b { color: var(--ink); font-weight: 600; }
+.resp { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.resp.locked { opacity: .75; }
+.ropts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ropt { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.ropt::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); flex: 0 0 auto; }
+.ropt[aria-pressed="true"] { border-color: currentColor; }
+.ropt[aria-pressed="true"]::before { background: currentColor; border-color: currentColor; }
+.ropt.r-none { color: var(--warn); }
+.ropt.r-no_responde { color: var(--muted); }
+.ropt.r-no_buscan { color: var(--bad); }
+.ropt.r-contactaran { color: var(--info); }
+.ropt:disabled { cursor: not-allowed; }
+.resp textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); }
+.resp .hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.resp .rowline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
+.resp input[type="date"] { border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: var(--surface); }
+.dactions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dactions .sp { flex: 1; }
+.confirm { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--bad); font-weight: 600; }
+
+.empty-state { padding: 48px 18px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.empty-state b { color: var(--ink); font-size: 16px; }
+
+/* Modal */
+.scrim { position: fixed; inset: 0; background: rgba(10,16,22,.5); display: grid; place-items: center; z-index: 50;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); width: min(560px, 100%); max-height: 100%; overflow: auto; }
+.modal header { padding: 16px 18px 6px; }
+.modal h3 { margin: 0; font-family: var(--f-display); font-size: 19px; }
+.modal form { padding: 8px 18px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.f.full { grid-column: 1 / -1; }
+.f label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.f input, .f select, .f textarea { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); width: 100%; }
+.f textarea { min-height: 88px; resize: vertical; }
+.mfoot { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.err { grid-column: 1 / -1; color: var(--bad); font-size: 13px; margin: 0; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--surface);
+  padding: 10px 14px; border-radius: 8px; font-size: 13px; box-shadow: var(--shadow); z-index: 60; max-width: calc(100% - 32px); }
+.foot { color: var(--muted); font-size: 12px; text-align: center; }
+
+@media (max-width: 860px) {
+  .cols { display: none; }
+  .row { grid-template-columns: 40px minmax(0, 1fr) 32px; grid-template-areas: "tick nm chev" "tick meta chev"; row-gap: 6px; padding: 12px 14px; }
+  .row .tickc { grid-area: tick; align-self: start; }
+  .row .prio { display: none; }
+  .row .nm { grid-area: nm; }
+  .row .chev { grid-area: chev; align-self: start; }
+  .row .meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; min-width: 0; }
+  .row .role { font-size: 12.5px; flex-basis: 100%; }
+  .detail { grid-template-columns: 1fr; padding: 4px 14px 16px 14px; }
+  .phead, .toolbar { padding-left: 14px; padding-right: 14px; }
+  .ropts { grid-template-columns: 1fr; }
+  .modal form { grid-template-columns: 1fr; }
+}
+@media (min-width: 861px) { .row .meta { display: contents; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Madrid · inicio feb–may 2027</div>
+      <h1>Candidaturas de prácticas</h1>
+    </div>
+    <div class="stats" id="stats" aria-live="polite"></div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Sectores"></nav>
+
+  <section class="panel" id="panel">
+    <div class="empty-state" id="boot"><b>Cargando tus candidaturas…</b><span>Aquí aparecerán los sectores y las empresas guardadas.</span></div>
+  </section>
+
+  <p class="foot">Se guarda automáticamente. Datos iniciales tomados de tus tres informes (oct 2026).</p>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const RESP = {
+    "": { label: "Sin respuesta aún", cls: "pending" },
+    no_responde: { label: "No responde", cls: "no_responde" },
+    no_buscan: { label: "No buscan incorporar", cls: "no_buscan" },
+    contactaran: { label: "Me contactan si se abre posición", cls: "contactaran" },
+  };
+  const REAL = { Alto: 3, Medio: 2, Bajo: 1 };
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+
+  const state = {
+    db: null,
+    sectors: [],
+    companies: [],
+    loadedS: false, loadedC: false,
+    active: null,
+    sort: "prio",
+    filter: "all",
+    q: "",
+    open: new Set(),
+    confirmDel: null,
+    readOnly: false,
+  };
+
+  // per-viewer conveniences
+  function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  state.active = lsGet("pt.active", null);
+  state.sort = lsGet("pt.sort", "prio");
+
+  const $ = (s, el) => (el || document).querySelector(s);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+  const today = () => new Date().toISOString().slice(0, 10);
+  const fmtDate = (d) => { if (!d) return ""; const [y, m, dd] = d.split("-"); return dd + "/" + m + "/" + y; };
+
+  function toast(msg) {
+    const root = $("#toastRoot");
+    root.innerHTML = '<div class="toast" role="status">' + esc(msg) + "</div>";
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => (root.innerHTML = ""), 3200);
+  }
+
+  // one write at a time per document
+  const queues = {};
+  function write(id, fn) {
+    queues[id] = (queues[id] || Promise.resolve()).then(fn).catch((e) => {
+      if (e && e.code === "invalid_argument") { state.readOnly = true; render(); toast("No tienes permiso para editar esta página."); }
+      else if (e && e.code === "quota_exceeded") toast("La base de datos está llena. Elimina empresas que ya no necesites.");
+      else toast("No se pudo guardar. Revisa la conexión y vuelve a intentarlo.");
+    });
+    return queues[id];
+  }
+  const cdoc = (id) => state.db.collection("companies").doc(id);
+  const sdoc = (id) => state.db.collection("sectors").doc(id);
+
+  // ---------- derived ----------
+  function sectorCompanies(sid) { return state.companies.filter((c) => c.sectorId === sid); }
+  function counts(list) {
+    const r = { total: list.length, applied: 0, pending: 0, no_responde: 0, no_buscan: 0, contactaran: 0 };
+    list.forEach((c) => { if (c.applied) { r.applied++; if (!c.response) r.pending++; else if (r[c.response] != null) r[c.response]++; } });
+    return r;
+  }
+  function alsoIn(c) {
+    const n = norm(c.name);
+    const out = [];
+    state.sectors.forEach((s) => {
+      if (s.id === c.sectorId) return;
+      if (state.companies.some((o) => o.sectorId === s.id && norm(o.name) === n)) out.push(s.name);
+    });
+    return out;
+  }
+  function sorted(list) {
+    const by = state.sort;
+    const prio = (a, b) => (a.priority || 0) - (b.priority || 0);
+    const name = (a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+    const arr = list.slice();
+    const respRank = { contactaran: 0, "": 1, no_responde: 2, no_buscan: 3 };
+    arr.sort((a, b) => {
+      switch (by) {
+        case "name": return name(a, b);
+        case "real": return (REAL[b.realism] || 0) - (REAL[a.realism] || 0) || prio(a, b);
+        case "pendFirst": return (a.applied ? 1 : 0) - (b.applied ? 1 : 0) || prio(a, b);
+        case "appFirst": return (b.applied ? 1 : 0) - (a.applied ? 1 : 0) || prio(a, b);
+        case "resp": {
+          const ra = a.applied ? respRank[a.response || ""] : 9, rb = b.applied ? respRank[b.response || ""] : 9;
+          return ra - rb || prio(a, b);
+        }
+        case "date": return (b.appliedAt || "").localeCompare(a.appliedAt || "") || prio(a, b);
+        default: return prio(a, b);
+      }
+    });
+    return arr;
+  }
+  function visible(list) {
+    const q = norm(state.q);
+    return list.filter((c) => {
+      if (state.filter === "pending" && c.applied) return false;
+      if (state.filter === "applied" && !c.applied) return false;
+      if (q && !norm([c.name, c.category, c.role, c.notes].join(" ")).includes(q)) return false;
+      return true;
+    });
+  }
+
+  // ---------- render ----------
+  function renderStats() {
+    const c = counts(state.companies);
+    $("#stats").innerHTML =
+      stat(c.total, "empresas") + stat(c.applied, "aplicadas", "ok") + stat(c.pending, "esperando respuesta") +
+      stat(c.contactaran, "me contactarán", "info") + stat(c.no_responde, "no responden") + stat(c.no_buscan, "no buscan", "bad");
+    function stat(n, l, cls) { return '<div class="stat ' + (cls || "") + '"><b>' + n + "</b><span>" + l + "</span></div>"; }
+  }
+
+  function renderTabs() {
+    const tabs = state.sectors.map((s) => {
+      const c = counts(sectorCompanies(s.id));
+      const pct = c.total ? Math.round((c.applied / c.total) * 100) : 0;
+      return '<button class="tab" role="tab" data-tab="' + esc(s.id) + '" aria-selected="' + (s.id === state.active) + '">' +
+        '<span class="tn">' + esc(s.name) + "</span>" +
+        '<span class="tc">' + c.applied + " / " + c.total + " aplicadas</span>" +
+        '<span class="bar"><i style="width:' + pct + '%"></i></span></button>';
+    }).join("");
+    $("#tabs").innerHTML = tabs + (state.readOnly ? "" : '<button class="tab add" data-act="newSector">+ Nuevo sector</button>');
+  }
+
+  function meter(r) {
+    if (!REAL[r]) return '<span class="meter none">—</span>';
+    const n = REAL[r];
+    return '<span class="meter" title="Realismo ' + r + '"><i>' + [1, 2, 3].map((k) => '<s class="' + (k <= n ? "on" : "") + '"></s>').join("") + "</i>" + r + "</span>";
+  }
+  function respPill(c) {
+    if (!c.applied) return '<span class="pill p-wait">Sin aplicar</span>';
+    const r = RESP[c.response || ""] || RESP[""];
+    return '<span class="pill p-' + r.cls + '">' + esc(r.label) + "</span>";
+  }
+
+  function renderPanel() {
+    const panel = $("#panel");
+    if (!state.db) {
+      panel.innerHTML = '<div class="empty-state"><b>No se puede acceder a la base de datos</b><span>Abre esta página en claude.ai con tu sesión iniciada para ver y guardar tus candidaturas.</span></div>';
+      return;
+    }
+    if (!state.loadedS || !state.loadedC) return;
+    if (!state.sectors.length) {
+      panel.innerHTML = '<div class="empty-state"><b>Todavía no hay sectores</b><span>Crea el primero (por ejemplo, Equity Research) y añade empresas dentro.</span>' +
+        (state.readOnly ? "" : '<button class="btn primary" data-act="newSector">+ Nuevo sector</button>') + "</div>";
+      return;
+    }
+    const s = state.sectors.find((x) => x.id === state.active);
+    const all = sectorCompanies(s.id);
+    const list = sorted(visible(all));
+    const c = counts(all);
+
+    const rows = list.map((co) => rowHtml(co, all)).join("");
+    const keepSearch = document.activeElement && document.activeElement.id === "q";
+
+    panel.innerHTML =
+      '<div class="phead"><div><h2>' + esc(s.name) + "</h2>" + (s.description ? "<p>" + esc(s.description) + "</p>" : "") +
+      '<p class="mono" style="font-size:12px">' + c.total + " empresas · " + c.applied + " aplicadas · " + c.pending + " esperando respuesta · " + c.contactaran + " me contactarán</p></div>" +
+      (state.readOnly ? "" : '<div class="pactions"><button class="btn" data-act="editSector">Renombrar</button>' +
+        (state.confirmDel === "sector:" + s.id
+          ? '<span class="confirm">¿Eliminar el sector y sus ' + c.total + ' empresas? <button class="btn danger solid" data-act="delSectorYes">Eliminar</button><button class="btn" data-act="cancelDel">Cancelar</button></span>'
+          : '<button class="btn danger" data-act="delSector">Eliminar sector</button>') + "</div>") +
+      "</div>" +
+      '<div class="toolbar">' +
+      '<input class="search" id="q" type="search" placeholder="Buscar empresa, rol o nota…" value="' + esc(state.q) + '" aria-label="Buscar">' +
+      '<div class="seg" role="group" aria-label="Filtro">' +
+      seg("all", "Todas") + seg("pending", "Pendientes") + seg("applied", "Aplicadas") + "</div>" +
+      '<label class="sortwrap" for="sort">Ordenar<select id="sort">' +
+      opt("prio", "Prioridad") + opt("name", "Nombre (A–Z)") + opt("real", "Realismo") + opt("pendFirst", "Pendientes primero") +
+      opt("appFirst", "Aplicadas primero") + opt("resp", "Respuesta") + opt("date", "Fecha de aplicación") + "</select></label>" +
+      (state.readOnly ? "" : '<button class="btn primary" data-act="newCompany">+ Añadir empresa</button>') +
+      "</div>" +
+      '<div class="cols" aria-hidden="true"><span>Aplicada</span><span style="text-align:right">#</span><span>Empresa</span><span>Rol a pedir</span><span>Realismo</span><span>Respuesta</span><span></span></div>' +
+      (rows || '<div class="empty-state"><b>' + (all.length ? "Ninguna empresa coincide" : "Este sector está vacío") + "</b><span>" +
+        (all.length ? "Cambia el filtro o la búsqueda." : "Añade la primera empresa con el botón «Añadir empresa».") + "</span></div>");
+
+    if (keepSearch) { const q = $("#q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+
+    function seg(v, l) { return '<button data-filter="' + v + '" aria-pressed="' + (state.filter === v) + '">' + l + "</button>"; }
+    function opt(v, l) { return '<option value="' + v + '"' + (state.sort === v ? " selected" : "") + ">" + l + "</option>"; }
+  }
+
+  function rowHtml(co, all) {
+    const open = state.open.has(co.id);
+    const also = alsoIn(co);
+    const ro = state.readOnly;
+    const id = esc(co.id);
+    let h = '<div class="item' + (co.applied ? " applied" : "") + (open ? " open" : "") + '" data-id="' + id + '">' +
+      '<div class="row">' +
+      '<span class="tickc"><button class="tick" data-act="toggle" aria-pressed="' + !!co.applied + '" aria-label="' + (co.applied ? "Marcar como no aplicada: " : "Marcar como aplicada: ") + esc(co.name) + '"' + (ro ? " disabled" : "") + ">" + CHECK + "</button></span>" +
+      '<span class="prio">' + (co.priority || "") + "</span>" +
+      '<div class="nm"><b>' + esc(co.name) + "</b>" + (co.category ? "<small>" + esc(co.category) + "</small>" : "") +
+      (also.length ? '<div><span class="also">También en ' + esc(also.join(", ")) + "</span></div>" : "") + "</div>" +
+      '<div class="meta"><span class="role' + (co.role ? "" : " none") + '">' + esc(co.role || "Sin rol definido") + "</span>" + meter(co.realism) + respPill(co) + "</div>" +
+      '<button class="chev" data-act="expand" aria-expanded="' + open + '" aria-label="Detalles de ' + esc(co.name) + '">' + CHEV + "</button>" +
+      "</div>";
+    if (open) {
+      const r = co.response || "";
+      const byPrio = all.slice().sort((a, b) => (a.priority || 0) - (b.priority || 0));
+      const idx = byPrio.findIndex((x) => x.id === co.id);
+      const canMove = !ro && state.sort === "prio";
+      h += '<div class="detail">' +
+        "<div><h4>Notas</h4><p class=\"notes" + (co.notes ? "" : " empty") + '">' + esc(co.notes || "Sin notas.") + "</p>" +
+        '<div class="dl"><span>Realismo <b>' + esc(co.realism || "—") + "</b></span><span>Prioridad <b class=\"mono\">" + (co.priority || "—") + "</b></span>" +
+        (co.applied && co.appliedAt ? "<span>Aplicada el <b class=\"mono\">" + fmtDate(co.appliedAt) + "</b></span>" : "") + "</div></div>" +
+        '<div class="resp' + (co.applied ? "" : " locked") + '"><h4 style="margin:0">Respuesta de la empresa</h4>' +
+        (co.applied ? "" : '<p class="hint">Marca la empresa como aplicada (tick verde) para registrar su respuesta.</p>') +
+        '<div class="ropts" role="group" aria-label="Respuesta">' +
+        Object.keys(RESP).map((k) => '<button class="ropt r-' + (k || "none") + '" data-act="resp" data-v="' + k + '" aria-pressed="' + (co.applied && r === k) + '"' + (!co.applied || ro ? " disabled" : "") + ">" + esc(RESP[k].label) + "</button>").join("") +
+        "</div>" +
+        (co.applied ? '<textarea data-field="responseNote" placeholder="Detalles: con quién hablaste, fecha de la respuesta, próximos pasos…"' + (ro ? " disabled" : "") + ">" + esc(co.responseNote || "") + "</textarea>" +
+          '<div class="rowline"><label>Fecha de aplicación <input type="date" data-field="appliedAt" value="' + esc(co.appliedAt || "") + '"' + (ro ? " disabled" : "") + "></label></div>" : "") +
+        "</div>" +
+        (ro ? "" : '<div class="dactions"><button class="btn" data-act="edit">Editar empresa</button>' +
+          (canMove ? '<button class="btn" data-act="up"' + (idx <= 0 ? " disabled" : "") + ' aria-label="Subir prioridad">↑ Subir</button><button class="btn" data-act="down"' + (idx >= byPrio.length - 1 ? " disabled" : "") + ' aria-label="Bajar prioridad">↓ Bajar</button>' : '<span class="hint" style="font-size:12px;color:var(--muted)">Ordena por prioridad para mover la empresa.</span>') +
+          '<span class="sp"></span>' +
+          (state.confirmDel === "co:" + co.id
+            ? '<span class="confirm">¿Eliminar ' + esc(co.name) + '? <button class="btn danger solid" data-act="delYes">Eliminar</button><button class="btn" data-act="cancelDel">Cancelar</button></span>'
+            : '<button class="btn danger" data-act="del">Eliminar</button>') + "</div>") +
+        "</div>";
+    }
+    return h + "</div>";
+  }
+
+  let deferred = false;
+  function render() {
+    const ae = document.activeElement;
+    if (ae && ae.dataset && ae.dataset.field && ae.closest("#panel")) { deferred = true; return; }
+    deferred = false;
+    if (state.sectors.length && !state.sectors.some((s) => s.id === state.active)) state.active = state.sectors[0].id;
+    renderStats();
+    renderTabs();
+    renderPanel();
+  }
+
+  // ---------- modals ----------
+  function openModal(html, onSubmit) {
+    const root = $("#modalRoot");
+    root.innerHTML = '<div class="scrim" data-scrim>' + html + "</div>";
+    const form = root.querySelector("form");
+    const first = form.querySelector("input,select,textarea");
+    if (first) first.focus();
+    form.addEventListener("submit", (e) => { e.preventDefault(); onSubmit(new FormData(form), form); });
+    root.querySelector("[data-scrim]").addEventListener("mousedown", (e) => { if (e.target.hasAttribute("data-scrim")) closeModal(); });
+    root.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", closeModal));
+  }
+  function closeModal() { $("#modalRoot").innerHTML = ""; }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("#modalRoot").innerHTML) closeModal(); });
+
+  function sectorModal(s) {
+    openModal(
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><header><h3 id="mt">' + (s ? "Renombrar sector" : "Nuevo sector") + "</h3></header>" +
+      '<form novalidate><div class="f full"><label for="s_name">Nombre</label><input id="s_name" name="name" required maxlength="80" value="' + esc(s ? s.name : "") + '" placeholder="Ej. Investment Banking"></div>' +
+      '<div class="f full"><label for="s_desc">Descripción (opcional)</label><textarea id="s_desc" name="description" maxlength="400" placeholder="Qué tipo de puestos incluye">' + esc(s ? s.description || "" : "") + "</textarea></div>" +
+      '<p class="err" id="ferr" hidden></p><div class="mfoot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit">' + (s ? "Guardar" : "Crear sector") + "</button></div></form></div>",
+      (fd, form) => {
+        const name = String(fd.get("name") || "").trim();
+        if (!name) { const er = form.querySelector("#ferr"); er.textContent = "Escribe un nombre para el sector."; er.hidden = false; return; }
+        const description = String(fd.get("description") || "").trim();
+        if (s) write(s.id, () => sdoc(s.id).update({ name, description }));
+        else {
+          const ref = state.db.collection("sectors").doc();
+          const order = state.sectors.reduce((m, x) => Math.max(m, x.order || 0), 0) + 1;
+          state.active = ref.id; lsSet("pt.active", ref.id);
+          write(ref.id, () => ref.set({ name, description, order, createdAt: new Date().toISOString() }));
+        }
+        closeModal();
+        toast(s ? "Sector actualizado" : "Sector creado");
+      }
+    );
+  }
+
+  function companyModal(co) {
+    const sid = co ? co.sectorId : state.active;
+    const all = sectorCompanies(sid);
+    const nextPrio = all.reduce((m, x) => Math.max(m, x.priority || 0), 0) + 1;
+    const v = co || { name: "", category: "", role: "", realism: "", notes: "", priority: nextPrio };
+    const sectorOpts = state.sectors.map((s) => '<option value="' + esc(s.id) + '"' + (s.id === sid ? " selected" : "") + ">" + esc(s.name) + "</option>").join("");
+    openModal(
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><header><h3 id="mt">' + (co ? "Editar empresa" : "Añadir empresa") + "</h3></header>" +
+      '<form novalidate>' +
+      '<div class="f full"><label for="c_name">Empresa</label><input id="c_name" name="name" required maxlength="120" value="' + esc(v.name) + '" placeholder="Ej. Magallanes Value Investors"></div>' +
+      '<div class="f"><label for="c_cat">Categoría</label><input id="c_cat" name="category" maxlength="120" value="' + esc(v.category) + '" placeholder="Ej. SGIIC independiente"></div>' +
+      '<div class="f"><label for="c_sector">Sector</label><select id="c_sector" name="sectorId">' + sectorOpts + "</select></div>" +
+      '<div class="f full"><label for="c_role">Rol a pedir</label><input id="c_role" name="role" maxlength="160" value="' + esc(v.role) + '" placeholder="Ej. Becario analista RV"></div>' +
+      '<div class="f"><label for="c_real">Realismo</label><select id="c_real" name="realism"><option value="">Sin valorar</option>' +
+      ["Alto", "Medio", "Bajo"].map((r) => '<option' + (v.realism === r ? " selected" : "") + ">" + r + "</option>").join("") + "</select></div>" +
+      '<div class="f"><label for="c_prio">Prioridad (1 = primera)</label><input id="c_prio" name="priority" type="number" min="1" step="1" value="' + esc(v.priority) + '"></div>' +
+      '<div class="f full"><label for="c_notes">Notas</label><textarea id="c_notes" name="notes" maxlength="2000" placeholder="Motivo, canal de entrada, contacto…">' + esc(v.notes) + "</textarea></div>" +
+      '<p class="err" id="ferr" hidden></p><div class="mfoot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit">' + (co ? "Guardar cambios" : "Añadir") + "</button></div></form></div>",
+      (fd, form) => {
+        const name = String(fd.get("name") || "").trim();
+        if (!name) { const er = form.querySelector("#ferr"); er.textContent = "Escribe el nombre de la empresa."; er.hidden = false; return; }
+        const data = {
+          name,
+          category: String(fd.get("category") || "").trim(),
+          role: String(fd.get("role") || "").trim(),
+          realism: String(fd.get("realism") || ""),
+          notes: String(fd.get("notes") || "").trim(),
+          priority: Math.max(1, parseInt(fd.get("priority"), 10) || nextPrio),
+          sectorId: String(fd.get("sectorId") || sid),
+        };
+        if (co) write(co.id, () => cdoc(co.id).update(data));
+        else {
+          const ref = state.db.collection("companies").doc();
+          Object.assign(data, { applied: false, appliedAt: "", response: "", responseNote: "", createdAt: new Date().toISOString() });
+          write(ref.id, () => ref.set(data));
+        }
+        if (data.sectorId !== state.active) { state.active = data.sectorId; lsSet("pt.active", data.sectorId); }
+        closeModal();
+        toast(co ? "Empresa actualizada" : "Empresa añadida a " + (state.sectors.find((s) => s.id === data.sectorId) || {}).name);
+      }
+    );
+  }
+
+  // ---------- events ----------
+  document.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-tab]");
+    if (tab) { state.active = tab.dataset.tab; lsSet("pt.active", state.active); state.confirmDel = null; render(); return; }
+    const f = e.target.closest("[data-filter]");
+    if (f) { state.filter = f.dataset.filter; render(); return; }
+    const a = e.target.closest("[data-act]");
+    if (!a || a.disabled) return;
+    const act = a.dataset.act;
+    const item = a.closest(".item");
+    const co = item ? state.companies.find((c) => c.id === item.dataset.id) : null;
+    const sec = state.sectors.find((s) => s.id === state.active);
+
+    switch (act) {
+      case "newSector": sectorModal(null); break;
+      case "editSector": if (sec) sectorModal(sec); break;
+      case "delSector": state.confirmDel = "sector:" + sec.id; render(); break;
+      case "delSectorYes": {
+        const sid = sec.id;
+        const kids = sectorCompanies(sid);
+        state.confirmDel = null;
+        (async () => {
+          for (const k of kids) await write(k.id, () => cdoc(k.id).delete());
+          await write(sid, () => sdoc(sid).delete());
+          toast("Sector eliminado");
+        })();
+        break;
+      }
+      case "cancelDel": state.confirmDel = null; render(); break;
+      case "newCompany": companyModal(null); break;
+      case "expand":
+        if (state.open.has(co.id)) state.open.delete(co.id); else state.open.add(co.id);
+        state.confirmDel = null; render(); break;
+      case "toggle": {
+        const on = !co.applied;
+        write(co.id, () => cdoc(co.id).update(on ? { applied: true, appliedAt: co.appliedAt || today() } : { applied: false }));
+        if (on) toast("Aplicada: " + co.name);
+        break;
+      }
+      case "resp":
+        if (!co.applied) return;
+        write(co.id, () => cdoc(co.id).update({ response: a.dataset.v }));
+        break;
+      case "edit": companyModal(co); break;
+      case "del": state.confirmDel = "co:" + co.id; render(); break;
+      case "delYes":
+        state.confirmDel = null; state.open.delete(co.id);
+        write(co.id, () => cdoc(co.id).delete()).then(() => toast("Empresa eliminada"));
+        break;
+      case "up": case "down": {
+        const byPrio = sectorCompanies(co.sectorId).sort((x, y) => (x.priority || 0) - (y.priority || 0));
+        // normalise to 1..n first so swaps are always well defined
+        const i = byPrio.findIndex((x) => x.id === co.id);
+        const j = act === "up" ? i - 1 : i + 1;
+        if (j < 0 || j >= byPrio.length) return;
+        const other = byPrio[j];
+        const pa = i + 1, pb = j + 1;
+        byPrio.forEach((x, k) => { if (x.priority !== k + 1 && x.id !== co.id && x.id !== other.id) write(x.id, () => cdoc(x.id).update({ priority: k + 1 })); });
+        write(co.id, () => cdoc(co.id).update({ priority: pb }));
+        write(other.id, () => cdoc(other.id).update({ priority: pa }));
+        break;
+      }
+    }
+  });
+
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "q") { state.q = e.target.value; clearTimeout(render.t); render.t = setTimeout(render, 120); }
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "sort") { state.sort = e.target.value; lsSet("pt.sort", state.sort); render(); return; }
+    const fld = e.target.dataset && e.target.dataset.field;
+    if (!fld) return;
+    const item = e.target.closest(".item");
+    const co = item && state.companies.find((c) => c.id === item.dataset.id);
+    if (!co) return;
+    const val = e.target.value;
+    if ((co[fld] || "") === val) return;
+    write(co.id, () => cdoc(co.id).update({ [fld]: val }));
+  });
+  document.addEventListener("focusout", (e) => {
+    if (e.target.dataset && e.target.dataset.field) setTimeout(() => { if (deferred) render(); }, 0);
+  });
+
+  // ---------- boot ----------
+  async function start() {
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    state.db = db;
+    if (!db) { render(); return; }
+    try {
+      const user = await window.claude.use("user");
+      if (user && user.can) { const w = await user.can("data.write"); if (w === false) state.readOnly = true; }
+    } catch (e) {}
+    db.collection("sectors").onSnapshot((snap) => {
+      state.sectors = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => (a.order || 0) - (b.order || 0) || String(a.name).localeCompare(String(b.name)));
+      state.loadedS = true; render();
+    }, onErr);
+    db.collection("companies").onSnapshot((snap) => {
+      state.companies = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      state.loadedC = true; render();
+    }, onErr);
+  }
+  function onErr(e) {
+    $("#panel").innerHTML = '<div class="empty-state"><b>Se perdió la conexión con tus datos</b><span>Recarga la página para volver a conectarte.</span></div>';
+  }
+  start();
+})();
+</script>
