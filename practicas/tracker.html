@@ -107,7 +107,11 @@ h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 4vw
 select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 8px; }
 
 /* List */
-.cols, .row { display: grid; grid-template-columns: 44px 38px minmax(0, 2.2fr) minmax(0, 2fr) 92px minmax(0, 1.35fr) 36px; gap: 10px; align-items: center; }
+.cols, .row { display: grid; grid-template-columns: 44px 38px minmax(0, 2.2fr) minmax(0, 2fr) 92px minmax(0, 1.35fr) 72px; gap: 10px; align-items: center; }
+.acts { display: flex; gap: 2px; justify-content: flex-end; }
+.trash { width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.trash:hover { background: var(--bad-soft); color: var(--bad); }
+.trash svg { width: 16px; height: 16px; }
 .cols { padding: 8px 18px; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
 .item { border-bottom: 1px solid var(--line); }
 .item:last-child { border-bottom: 0; }
@@ -197,11 +201,11 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
 
 @media (max-width: 860px) {
   .cols { display: none; }
-  .row { grid-template-columns: 40px minmax(0, 1fr) 32px; grid-template-areas: "tick nm chev" "tick meta chev"; row-gap: 6px; padding: 12px 14px; }
+  .row { grid-template-columns: 40px minmax(0, 1fr) 34px; grid-template-areas: "tick nm chev" "tick meta chev"; row-gap: 6px; padding: 12px 14px; }
   .row .tickc { grid-area: tick; align-self: start; }
   .row .prio { display: none; }
   .row .nm { grid-area: nm; }
-  .row .chev { grid-area: chev; align-self: start; }
+  .row .acts { grid-area: chev; align-self: start; flex-direction: column; }
   .row .meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; min-width: 0; }
   .row .role { font-size: 12.5px; flex-basis: 100%; }
   .detail { grid-template-columns: 1fr; padding: 4px 14px 16px 14px; }
@@ -246,6 +250,7 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
   };
   const REAL = { Alto: 3, Medio: 2, Bajo: 1 };
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
   const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
   const state = {
@@ -434,7 +439,8 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
       '<div class="nm"><b>' + esc(co.name) + "</b>" + (co.category ? "<small>" + esc(co.category) + "</small>" : "") +
       (also.length ? '<div><span class="also">También en ' + esc(also.join(", ")) + "</span></div>" : "") + "</div>" +
       '<div class="meta"><span class="role' + (co.role ? "" : " none") + '">' + esc(co.role || "Sin rol definido") + "</span>" + meter(co.realism) + respPill(co) + "</div>" +
-      '<button class="chev" data-act="expand" aria-expanded="' + open + '" aria-label="Detalles de ' + esc(co.name) + '">' + CHEV + "</button>" +
+      '<div class="acts">' + (ro ? "" : '<button class="trash" data-act="del" title="Eliminar" aria-label="Eliminar ' + esc(co.name) + '">' + TRASH + "</button>") +
+      '<button class="chev" data-act="expand" aria-expanded="' + open + '" aria-label="Detalles de ' + esc(co.name) + '">' + CHEV + "</button></div>" +
       "</div>";
     if (open) {
       const r = co.response || "";
@@ -599,7 +605,7 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
         write(co.id, () => cdoc(co.id).update({ response: a.dataset.v }));
         break;
       case "edit": companyModal(co); break;
-      case "del": state.confirmDel = "co:" + co.id; render(); break;
+      case "del": state.confirmDel = "co:" + co.id; state.open.add(co.id); render(); break;
       case "delYes":
         state.confirmDel = null; state.open.delete(co.id);
         write(co.id, () => cdoc(co.id).delete()).then(() => toast("Empresa eliminada"));
